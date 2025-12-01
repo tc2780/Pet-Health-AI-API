@@ -2,6 +2,7 @@
 Symptom tracking and AI analysis endpoints
 """
 from typing import List
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,7 +60,7 @@ async def create_symptom(
 
 @router.get("/pet/{pet_id}", response_model=List[Symptom])
 async def get_pet_symptoms(
-    pet_id: str,
+    pet_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -225,7 +226,7 @@ async def create_symptom_assessment(
 
 @router.get("/assessments/pet/{pet_id}", response_model=List[SymptomAssessment])
 async def get_pet_assessments(
-    pet_id: str,
+    pet_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
