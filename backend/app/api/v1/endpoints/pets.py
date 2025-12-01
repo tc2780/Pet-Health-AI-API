@@ -12,6 +12,7 @@ from app.schemas.user import User
 from app.services.auth import get_current_user_from_token
 from app.services.pet import PetService
 from app.api.v1.endpoints.auth import oauth2_scheme
+from app.services.vet_sync import VetSyncService
 
 router = APIRouter()
 
@@ -142,3 +143,34 @@ async def delete_pet(
         )
     
     return {"message": "Pet deleted successfully"}
+
+
+@router.post("/{pet_id}/sync")
+async def sync_pet_with_vet(
+    pet_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Trigger a mock sync of a single pet's data with a vet clinic."""
+    pet_service = PetService(db)
+    pet = await pet_service.get_pet_by_id(pet_id)
+    if not pet:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pet not found")
+
+    if pet.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to sync this pet")
+
+    vet_sync = VetSyncService(db)
+    result = await vet_sync.sync_pet(pet_id)
+    return result
+
+
+@router.post("/sync-all")
+async def sync_all_user_pets(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Trigger a mock sync for all pets belonging to the current user."""
+    vet_sync = VetSyncService(db)
+    results = await vet_sync.sync_all_user_pets(current_user.id)
+    return {"results": results}

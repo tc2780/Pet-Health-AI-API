@@ -13,6 +13,7 @@ services:
       - SECRET_KEY=super-secret-development-key-change-in-production
       - AI_PROVIDER=ollama
       - OLLAMA_BASE_URL=http://ollama:11434
+      - VET_SYNC_MOCK=true
       - DEBUG=true
       - LOG_LEVEL=INFO
     volumes:
