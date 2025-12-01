@@ -1,0 +1,398 @@
+# Prometheus Alert Rules
+# This file contains alert rules for monitoring the Pet Health API system
+
+groups:
+  - name: api_health
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighAPIErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (endpoint) 
+          / 
+          sum(rate(http_requests_total[5m])) by (endpoint)) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High API error rate on {{ $labels.endpoint }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for endpoint {{ $labels.endpoint }}"
+          runbook: "https://docs/runbook.md#high-error-rate"
+      
+      # API service down
+      - alert: APIServiceDown
+        expr: up{job="pet_health_api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "Pet Health API service is down"
+          description: "The API service has been down for more than 2 minutes"
+          runbook: "https://docs/runbook.md#service-down"
+      
+      # High response time
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint)
+          ) > 2.0
+        for: 10m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency on {{ $labels.endpoint }}"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.endpoint }}"
+          runbook: "https://docs/runbook.md#high-latency"
+      
+      # Too many requests (potential DDoS)
+      - alert: HighRequestRate
+        expr: |
+          sum(rate(http_requests_total[1m])) by (instance) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Very high request rate detected"
+          description: "Instance {{ $labels.instance }} is receiving {{ $value }} requests/sec"
+          runbook: "https://docs/runbook.md#high-traffic"
+
+  - name: database_health
+    interval: 30s
+    rules:
+      # Database connection pool exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          pg_stat_activity_count{state="active"} 
+          / 
+          pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of connections are in use"
+          runbook: "https://docs/runbook.md#db-connection-pool"
+      
+      # Database down
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Database has been unreachable for more than 2 minutes"
+          runbook: "https://docs/runbook.md#database-down"
+      
+      # Slow queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          rate(pg_stat_statements_mean_exec_time_seconds[5m]) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database queries are slow"
+          description: "Average query time is {{ $value }}s"
+          runbook: "https://docs/runbook.md#slow-queries"
+      
+      # Database disk space
+      - alert: DatabaseDiskSpaceRunningOut
+        expr: |
+          (pg_database_size_bytes{datname="petdb"} 
+          / 
+          node_filesystem_size_bytes{mountpoint="/var/lib/postgresql/data"}) > 0.85
+        for: 30m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database disk space running low"
+          description: "Database is using {{ $value | humanizePercentage }} of available disk"
+          runbook: "https://docs/runbook.md#disk-space"
+
+  - name: ai_service_health
+    interval: 30s
+    rules:
+      # AI service down
+      - alert: AIServiceDown
+        expr: up{job="ollama"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ai
+        annotations:
+          summary: "Ollama AI service is down"
+          description: "AI service has been unreachable for more than 2 minutes"
+          runbook: "https://docs/runbook.md#ai-service-down"
+      
+      # High AI processing time
+      - alert: HighAIProcessingTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_assessment_duration_seconds_bucket[5m])) by (le)
+          ) > 10.0
+        for: 10m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "AI processing taking too long"
+          description: "95th percentile AI processing time is {{ $value }}s"
+          runbook: "https://docs/runbook.md#slow-ai-processing"
+      
+      # High AI error rate
+      - alert: HighAIErrorRate
+        expr: |
+          (sum(rate(ai_assessments_total{status="error"}[5m]))
+          /
+          sum(rate(ai_assessments_total[5m]))) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "High AI service error rate"
+          description: "AI error rate is {{ $value | humanizePercentage }}"
+          runbook: "https://docs/runbook.md#ai-errors"
+      
+      # AI model not loaded
+      - alert: AIModelNotLoaded
+        expr: ollama_loaded_models == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: ai
+        annotations:
+          summary: "No AI models are loaded"
+          description: "Ollama has no models available for inference"
+          runbook: "https://docs/runbook.md#ai-model-missing"
+
+  - name: redis_health
+    interval: 30s
+    rules:
+      # Redis down
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been unreachable for more than 2 minutes"
+          runbook: "https://docs/runbook.md#redis-down"
+      
+      # High Redis memory usage
+      - alert: RedisHighMemoryUsage
+        expr: |
+          (redis_memory_used_bytes / redis_memory_max_bytes) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis is using {{ $value | humanizePercentage }} of allocated memory"
+          runbook: "https://docs/runbook.md#redis-memory"
+      
+      # High Redis connection count
+      - alert: RedisHighConnectionCount
+        expr: redis_connected_clients > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis has too many connections"
+          description: "Redis has {{ $value }} active connections"
+          runbook: "https://docs/runbook.md#redis-connections"
+
+  - name: compliance_monitoring
+    interval: 60s
+    rules:
+      # External AI calls detected (privacy violation)
+      - alert: UnauthorizedExternalAICalls
+        expr: |
+          sum(rate(http_requests_total{destination=~".*openai.*|.*anthropic.*|.*google.*"}[5m])) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: compliance
+          compliance_type: privacy
+        annotations:
+          summary: "CRITICAL: Unauthorized external AI API calls detected"
+          description: "Data may have left local infrastructure - immediate investigation required"
+          runbook: "https://docs/runbook.md#privacy-breach"
+      
+      # Missing AI disclaimers
+      - alert: AIResponsesMissingDisclaimers
+        expr: |
+          (sum(rate(ai_assessments_total{has_disclaimer="false"}[10m]))
+          /
+          sum(rate(ai_assessments_total[10m]))) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          component: compliance
+          compliance_type: ethics
+        annotations:
+          summary: "AI responses missing medical disclaimers"
+          description: "{{ $value | humanizePercentage }} of AI responses lack disclaimers"
+          runbook: "https://docs/runbook.md#missing-disclaimers"
+      
+      # Unauthorized data access attempts
+      - alert: UnauthorizedDataAccess
+        expr: |
+          sum(rate(http_requests_total{status="403"}[5m])) by (endpoint) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: compliance
+          compliance_type: privacy
+        annotations:
+          summary: "High rate of unauthorized access attempts"
+          description: "{{ $value }} unauthorized access attempts/sec on {{ $labels.endpoint }}"
+          runbook: "https://docs/runbook.md#unauthorized-access"
+      
+      # Data export requests spike (potential data breach)
+      - alert: UnusualDataExportActivity
+        expr: |
+          sum(rate(data_export_requests_total[5m])) > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: compliance
+          compliance_type: privacy
+        annotations:
+          summary: "Unusual spike in data export requests"
+          description: "{{ $value }} data exports/sec detected"
+          runbook: "https://docs/runbook.md#data-export-spike"
+
+  - name: system_resources
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+          runbook: "https://docs/runbook.md#high-cpu"
+      
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook: "https://docs/runbook.md#high-memory"
+      
+      # Disk space running out
+      - alert: DiskSpaceRunningOut
+        expr: |
+          (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.*"} 
+          / 
+          node_filesystem_size_bytes{fstype!~"tmpfs|fuse.*"})) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Disk space running low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value | humanizePercentage }} full"
+          runbook: "https://docs/runbook.md#disk-space"
+
+  - name: slo_monitoring
+    interval: 60s
+    rules:
+      # SLO: API availability < 99.5%
+      - alert: SLOAvailabilityBreach
+        expr: |
+          (sum(rate(http_requests_total{status!~"5.."}[30m]))
+          /
+          sum(rate(http_requests_total[30m]))) < 0.995
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+        annotations:
+          summary: "API availability SLO breach"
+          description: "API availability is {{ $value | humanizePercentage }} (target: 99.5%)"
+          runbook: "https://docs/runbook.md#slo-breach"
+      
+      # SLO: API latency p95 > 1s
+      - alert: SLOLatencyBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[30m])) by (le)
+          ) > 1.0
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+        annotations:
+          summary: "API latency SLO breach"
+          description: "p95 latency is {{ $value }}s (target: <1s)"
+          runbook: "https://docs/runbook.md#slo-latency"
+      
+      # SLO: AI processing time p95 > 5s
+      - alert: SLOAIProcessingBreach
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_assessment_duration_seconds_bucket[30m])) by (le)
+          ) > 5.0
+        for: 15m
+        labels:
+          severity: warning
+          component: slo
+        annotations:
+          summary: "AI processing time SLO breach"
+          description: "p95 AI processing time is {{ $value }}s (target: <5s)"
+          runbook: "https://docs/runbook.md#slo-ai-processing"
+
+  - name: cost_monitoring
+    interval: 300s  # Check every 5 minutes
+    rules:
+      # Unusually high request volume (cost concern)
+      - alert: UnusuallyHighRequestVolume
+        expr: |
+          sum(rate(http_requests_total[1h])) > 10000
+        for: 30m
+        labels:
+          severity: warning
+          component: cost
+        annotations:
+          summary: "Unusually high request volume detected"
+          description: "Request rate is {{ $value }}/sec (may impact costs)"
+          runbook: "https://docs/runbook.md#high-traffic-cost"
+      
+      # High AI inference volume
+      - alert: HighAIInferenceVolume
+        expr: |
+          sum(rate(ai_assessments_total[1h])) > 1000
+        for: 30m
+        labels:
+          severity: info
+          component: cost
+        annotations:
+          summary: "High AI inference volume"
+          description: "AI inference rate is {{ $value }}/sec"
+          runbook: "https://docs/runbook.md#ai-cost-monitoring"

@@ -75,8 +75,8 @@ docker compose exec ollama ollama pull llama3.1:latest
 ### 🔄 **Veterinary Sync Endpoints**
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `POST` | `/api/v1/pets/{pet_id}/sync` | Sync single pet with external vet system | ✅ |
-| `POST` | `/api/v1/pets/sync-all` | Sync all user's pets with vet system | ✅ |
+| `POST` | `/api/v1/pets/{pet_id}/sync` | Sync single pet with external vet system (mock) | ✅ |
+| `POST` | `/api/v1/pets/sync-all` | Sync all user's pets with vet system (mock) | ✅ |
 
 ### 🩺 **Symptom Tracking Endpoints**
 | Method | Endpoint | Description | Auth Required |
