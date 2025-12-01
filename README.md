@@ -30,6 +30,41 @@
    - Health Check: http://localhost:8000/health
    - API Base: http://localhost:8000/api/v1/
 
+### Run Demo Scripts
+
+All demo scripts run inside the Docker container (no local Python setup needed):
+
+```bash
+# Run the main demo
+docker compose exec api python demo_scripts/run_demo.py
+
+# Run AI veterinary demo
+docker compose exec api python demo_scripts/ai_veterinary_demo.py
+
+# Run end-to-end workflow test
+docker compose exec api python demo_scripts/end_to_end_workflow_test.py
+
+# Test Ollama integration directly
+docker compose exec api python demo_scripts/ollama_direct_test.py
+```
+
+### Run Tests
+
+Run the test suite inside the Docker container:
+
+```bash
+# Run all tests
+docker compose exec api pytest
+
+# Run specific test categories
+docker compose exec api pytest tests/unit/
+docker compose exec api pytest tests/integration/
+docker compose exec api pytest tests/ai/
+
+# Run with coverage
+docker compose exec api pytest --cov=app --cov-report=html
+```
+
 ### Test the Backend
 
 Run the comprehensive test suite:

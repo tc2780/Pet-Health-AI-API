@@ -18,6 +18,7 @@ services:
       - LOG_LEVEL=INFO
     volumes:
       - ./backend:/app
+      - /app/.local  # Preserve installed Python packages
     depends_on:
       postgres:
         condition: service_healthy

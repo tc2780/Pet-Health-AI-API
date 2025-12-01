@@ -7,86 +7,14 @@ This folder contains demonstration scripts for testing and showcasing the Pet He
 Run the interactive demo launcher:
 
 ```bash
-cd backend
-python demo_scripts/run_demo.py
+docker compose exec api python demo_scripts/run_demo.py
 ```
 
 Or run individual scripts directly (see below).
 
-## 📁 Scripts
-
-### 1. `run_demo.py` (Interactive Menu)
-**Purpose:** Interactive launcher for all demo scripts  
-**Use Case:** Convenient way to explore all demos
-
-```bash
-python demo_scripts/run_demo.py
-```
-
-### 2. `ollama_direct_test.py`
-**Purpose:** Test Ollama API connectivity and response parsing  
-**Use Case:** Quick validation that Ollama is running and responding correctly  
-**Runtime:** ~5 seconds
-
-```bash
-python demo_scripts/ollama_direct_test.py
-```
-
-**Features:**
-- ✅ Tests Ollama API connectivity
-- ✅ Validates JSON response parsing
-- ✅ Checks response structure
-- ✅ Returns exit code for CI/CD
-
-### 3. `ai_veterinary_demo.py`
-**Purpose:** Comprehensive demonstration of AI-powered veterinary analysis  
-**Use Case:** Showcase different urgency levels with realistic pet cases  
-**Runtime:** ~30-60 seconds
-
-```bash
-python demo_scripts/ai_veterinary_demo.py
-```
-
-**Test Cases:**
-- 🚨 **Emergency:** Severe respiratory distress (dog)
-- ⚠️ **High Priority:** Gastrointestinal issues with blood (cat)
-- 🟡 **Medium:** Behavioral changes and lethargy (dog)
-
-### 4. `service_integration_test.py`
-**Purpose:** Test the SymptomService with real AI integration  
-**Use Case:** Validate end-to-end symptom analysis through the service layer  
-**Runtime:** ~20-40 seconds
-
-```bash
-python demo_scripts/service_integration_test.py
-```
-
-**Features:**
-- ✅ Tests SymptomService integration
-- ✅ Uses in-memory database
-- ✅ Validates service-level functionality
-- ✅ Comprehensive test summary
-
-### 5. `end_to_end_workflow_test.py`
-**Purpose:** Complete backend workflow test (registration → authentication → pet management)  
-**Use Case:** Validate entire API flow with real HTTP requests  
-**Runtime:** ~10-20 seconds
-
-```bash
-python demo_scripts/end_to_end_workflow_test.py
-```
-
-**Test Coverage:**
-- ✅ Health check and API docs
-- ✅ User registration and login
-- ✅ JWT authentication
-- ✅ Pet CRUD operations
-- ✅ Authorization enforcement
-- ✅ Automatic cleanup
-
-**Prerequisites:** `pip install requests`
-
 ## 📋 Prerequisites
+
+**No local Python setup required** - all demos run inside Docker containers.
 
 Before running demos:
 
@@ -110,11 +38,82 @@ To quickly verify everything is working:
 
 ```bash
 # Test Ollama connectivity (fastest)
-python demo_scripts/ollama_direct_test.py
+docker compose exec api python demo_scripts/ollama_direct_test.py
 
 # Run full demo (comprehensive)
-python demo_scripts/ai_veterinary_demo.py
+docker compose exec api python demo_scripts/ai_veterinary_demo.py
 ```
+
+## 📁 Scripts
+
+### 1. `run_demo.py` (Interactive Menu)
+**Purpose:** Interactive launcher for all demo scripts  
+**Use Case:** Convenient way to explore all demos
+
+```bash
+docker compose exec api python demo_scripts/run_demo.py
+```
+
+### 2. `ollama_direct_test.py`
+**Purpose:** Test Ollama API connectivity and response parsing  
+**Use Case:** Quick validation that Ollama is running and responding correctly  
+**Runtime:** ~5 seconds
+
+```bash
+docker compose exec api python demo_scripts/ollama_direct_test.py
+```
+
+**Features:**
+- ✅ Tests Ollama API connectivity
+- ✅ Validates JSON response parsing
+- ✅ Checks response structure
+- ✅ Returns exit code for CI/CD
+
+### 3. `ai_veterinary_demo.py`
+**Purpose:** Comprehensive demonstration of AI-powered veterinary analysis  
+**Use Case:** Showcase different urgency levels with realistic pet cases  
+**Runtime:** ~30-60 seconds
+
+```bash
+docker compose exec api python demo_scripts/ai_veterinary_demo.py
+```
+
+**Test Cases:**
+- 🚨 **Emergency:** Severe respiratory distress (dog)
+- ⚠️ **High Priority:** Gastrointestinal issues with blood (cat)
+- 🟡 **Medium:** Behavioral changes and lethargy (dog)
+
+### 4. `service_integration_test.py`
+**Purpose:** Test the SymptomService with real AI integration  
+**Use Case:** Validate end-to-end symptom analysis through the service layer  
+**Runtime:** ~20-40 seconds
+
+```bash
+docker compose exec api python demo_scripts/service_integration_test.py
+```
+
+**Features:**
+- ✅ Tests SymptomService integration
+- ✅ Uses in-memory database
+- ✅ Validates service-level functionality
+- ✅ Comprehensive test summary
+
+### 5. `end_to_end_workflow_test.py`
+**Purpose:** Complete backend workflow test (registration → authentication → pet management)  
+**Use Case:** Validate entire API flow with real HTTP requests  
+**Runtime:** ~10-20 seconds
+
+```bash
+docker compose exec api python demo_scripts/end_to_end_workflow_test.py
+```
+
+**Test Coverage:**
+- ✅ Health check and API docs
+- ✅ User registration and login
+- ✅ JWT authentication
+- ✅ Pet CRUD operations
+- ✅ Authorization enforcement
+- ✅ Automatic cleanup
 
 ## 🔄 What Changed?
 

@@ -6,14 +6,17 @@ Showcases different urgency levels with realistic pet health cases
 import asyncio
 import aiohttp
 import json
+import os
 from typing import Dict, List, Any
 
 
 class VeterinaryDemo:
     """Demonstration of AI-powered veterinary analysis"""
     
-    def __init__(self, ollama_url: str = "http://localhost:11434/api/generate"):
-        self.ollama_url = ollama_url
+    def __init__(self):
+        # Get Ollama URL from environment variable (for Docker) or use localhost
+        ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.ollama_url = f"{ollama_base}/api/generate"
         self.model = "llama3.2:3b"
         
     def get_test_cases(self) -> List[Dict[str, Any]]:

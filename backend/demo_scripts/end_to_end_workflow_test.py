@@ -7,6 +7,7 @@ import requests
 import json
 import time
 import sys
+import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -14,8 +15,9 @@ from typing import Optional, Dict, Any
 class BackendWorkflowTester:
     """Complete end-to-end test of backend functionality"""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
+    def __init__(self):
+        # Get API URL from environment or use localhost
+        self.base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
         self.access_token: Optional[str] = None
         self.user_id: Optional[str] = None
         self.pet_id: Optional[str] = None
@@ -279,14 +281,16 @@ def check_prerequisites():
         print("Install: pip install requests")
         return False
     
+    api_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+    
     try:
-        response = requests.get("http://localhost:8000/health", timeout=5)
+        response = requests.get(f"{api_url}/health", timeout=5)
         if response.status_code != 200:
             print("❌ API health check failed.")
             print("Start backend: docker compose up -d")
             return False
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to API at http://localhost:8000")
+        print(f"❌ Cannot connect to API at {api_url}")
         print("Start backend: docker compose up -d")
         return False
     

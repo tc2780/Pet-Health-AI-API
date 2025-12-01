@@ -6,6 +6,7 @@ Quick validation script to ensure Ollama is running correctly
 import asyncio
 import aiohttp
 import json
+import os
 
 
 async def test_ollama_connectivity():
@@ -46,12 +47,15 @@ Respond only with the JSON object, no other text."""
         }
     }
     
+    # Get Ollama URL from environment variable (for Docker) or use localhost
+    ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    
     try:
         async with aiohttp.ClientSession() as session:
-            print("📡 Calling Ollama API at http://localhost:11434...")
+            print(f"📡 Calling Ollama API at {ollama_url}...")
             
             async with session.post(
-                "http://localhost:11434/api/generate", 
+                f"{ollama_url}/api/generate", 
                 json=payload, 
                 timeout=30
             ) as response:

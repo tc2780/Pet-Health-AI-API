@@ -6,7 +6,7 @@ AI-powered pet health symptom tracking and analysis API built with FastAPI.
 
 ### Prerequisites
 - Docker and Docker Compose
-- Python 3.11+ (for local development)
+- Python 3.11+ (optional, only if running outside Docker)
 
 ### Development Setup
 
