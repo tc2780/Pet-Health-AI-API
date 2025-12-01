@@ -61,6 +61,12 @@ docker compose exec ollama ollama pull llama3.1:latest
 - `PUT /api/v1/pets/{id}` - Update pet information
 - `DELETE /api/v1/pets/{id}` - Delete pet
 
+### Vet Clinic Sync (Integration)
+- `POST /api/v1/pets/{id}/sync` - Sync a single pet's data with a vet clinic (mock).
+- `POST /api/v1/pets/sync-all` - Sync all pets belonging to the authenticated user (mock).
+
+These endpoints currently perform a mock sync and return a `SyncResult` or `SyncAllResponse`. In production replace the mock service with real HTTP clients and secure authentication with partner clinics.
+
 ### Symptoms & AI Analysis
 - `POST /api/v1/symptoms/` - Log new symptom
 - `GET /api/v1/symptoms/pet/{id}` - Get pet's symptom history
@@ -89,6 +95,24 @@ curl -X POST "http://localhost:8000/api/v1/pets/" \
      -H "Content-Type: application/json" \
      -d '{"name": "Buddy", "species": "dog", "breed": "Golden Retriever", "age_years": 3}'
 ```
+
+### Vet Sync examples
+
+Sync a single pet (replace PET_ID):
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/pets/PET_ID/sync" \
+   -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+Sync all user's pets:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
+   -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+Note: When running via `docker-compose`, the `api` service sets `VET_SYNC_MOCK=true` to enable mock behaviour by default.
 
 ## 🔧 **Development**
 

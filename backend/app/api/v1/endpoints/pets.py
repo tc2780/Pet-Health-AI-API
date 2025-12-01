@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.schemas.pet import Pet, PetCreate, PetUpdate, PetWithSymptoms
+from app.schemas.vet_sync import SyncResult, SyncAllResponse
 from app.schemas.user import User
 from app.services.auth import get_current_user_from_token
 from app.services.pet import PetService
@@ -145,7 +146,7 @@ async def delete_pet(
     return {"message": "Pet deleted successfully"}
 
 
-@router.post("/{pet_id}/sync")
+@router.post("/{pet_id}/sync", response_model=SyncResult)
 async def sync_pet_with_vet(
     pet_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -162,10 +163,14 @@ async def sync_pet_with_vet(
 
     vet_sync = VetSyncService(db)
     result = await vet_sync.sync_pet(pet_id)
+    # Normalize datetime string to proper types for response model
+    if isinstance(result.get("synced_at"), str):
+        # Pydantic will parse ISO strings automatically; keep as-is
+        pass
     return result
 
 
-@router.post("/sync-all")
+@router.post("/sync-all", response_model=SyncAllResponse)
 async def sync_all_user_pets(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
@@ -173,4 +178,14 @@ async def sync_all_user_pets(
     """Trigger a mock sync for all pets belonging to the current user."""
     vet_sync = VetSyncService(db)
     results = await vet_sync.sync_all_user_pets(current_user.id)
-    return {"results": results}
+    # Convert simple dict results into list of SyncResult-compatible dicts
+    normalized = []
+    for r in results:
+        normalized.append({
+            "success": r.get("synced", False),
+            "clinic_id": r.get("clinic_id"),
+            "synced_at": r.get("synced_at"),
+            "payload_summary": r.get("payload_summary"),
+            "reason": r.get("reason"),
+        })
+    return {"results": normalized}

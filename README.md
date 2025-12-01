@@ -52,3 +52,12 @@ docker compose down
 - **Ollama AI Service**: localhost:11434
 - **Prometheus Monitoring**: http://localhost:9090
 - **Grafana Dashboard**: http://localhost:3000
+
+## Vet Clinic Sync
+
+This project includes a mock vet clinic sync service and API endpoints to demonstrate how pet data can be synchronized with external veterinary partners. The endpoints are:
+
+- `POST /api/v1/pets/{id}/sync` — sync a single pet's data (mock)
+- `POST /api/v1/pets/sync-all` — sync all pets for the authenticated user (mock)
+
+When running with `docker compose`, the `api` service exposes `VET_SYNC_MOCK=true` to enable the mock sync behavior by default. Replace the mock implementation in `backend/app/services/vet_sync.py` with a real integration when ready.
