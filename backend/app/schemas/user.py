@@ -3,13 +3,13 @@ User schemas for request/response validation
 """
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 
 # Base user schema
 class UserBase(BaseModel):
     email: EmailStr
+    username: Optional[str] = None
 
 
 # User creation schema
@@ -20,6 +20,7 @@ class UserCreate(UserBase):
 # User update schema
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
+    username: Optional[str] = None
     password: Optional[str] = None
 
 
@@ -27,7 +28,7 @@ class UserUpdate(BaseModel):
 class User(UserBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: UUID
+    id: str
     is_active: bool
     is_verified: bool
     created_at: datetime

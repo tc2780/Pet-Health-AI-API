@@ -1,8 +1,7 @@
 """
 Symptom models for tracking pet symptoms and AI assessments
 """
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -13,8 +12,8 @@ from app.core.database import Base
 class Symptom(Base):
     __tablename__ = "symptoms"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    pet_id = Column(String(36), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
     symptom_name = Column(String(100), nullable=False)
     severity = Column(String(20), nullable=False)  # 'mild', 'moderate', 'severe'
     description = Column(Text)
@@ -32,9 +31,9 @@ class Symptom(Base):
 class SymptomAssessment(Base):
     __tablename__ = "symptom_assessments"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
-    symptoms_json = Column(JSONB, nullable=False)  # Store symptom data as JSON
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    pet_id = Column(String(36), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
+    symptoms_json = Column(JSON, nullable=False)  # Store symptom data as JSON
     ai_analysis = Column(Text)
     urgency_level = Column(String(20), nullable=False)  # 'low', 'medium', 'high', 'emergency'
     recommendations = Column(Text)

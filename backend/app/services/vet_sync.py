@@ -7,7 +7,6 @@ real HTTP client logic when integrating with partner APIs.
 """
 from datetime import datetime
 from typing import Any, Dict, List
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.pet import PetService
@@ -18,7 +17,7 @@ class VetSyncService:
         self.db = db
         self.pet_service = PetService(db)
 
-    async def sync_pet(self, pet_id: UUID) -> Dict[str, Any]:
+    async def sync_pet(self, pet_id: str) -> Dict[str, Any]:
         """Mock-sync a single pet's data to a vet clinic.
 
         Returns a dict with status and metadata that mirrors what a real
@@ -47,7 +46,7 @@ class VetSyncService:
 
         return result
 
-    async def sync_all_user_pets(self, user_id: UUID) -> List[Dict[str, Any]]:
+    async def sync_all_user_pets(self, user_id: str) -> List[Dict[str, Any]]:
         """Mock-sync all pets belonging to a user and return list of results."""
         pets = await self.pet_service.get_user_pets(user_id)
         results = []

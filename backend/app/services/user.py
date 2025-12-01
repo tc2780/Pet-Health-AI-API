@@ -24,6 +24,11 @@ class UserService:
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
     
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """Get user by username"""
+        result = await self.db.execute(select(User).where(User.username == username))
+        return result.scalar_one_or_none()
+    
     async def create_user(self, user_data: UserCreate) -> User:
         """Create a new user"""
         password_hash = get_password_hash(user_data.password)
@@ -73,5 +78,15 @@ class UserService:
             return False
         
         user.is_active = False
+        await self.db.commit()
+        return True
+    
+    async def delete_user(self, user_id: str) -> bool:
+        """Permanently delete user account and all associated data"""
+        user = await self.get_user_by_id(user_id)
+        if not user:
+            return False
+        
+        await self.db.delete(user)
         await self.db.commit()
         return True

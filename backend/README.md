@@ -47,50 +47,251 @@ docker compose exec ollama ollama pull llama3.1:latest
 | **Prometheus** | 9090 | Metrics collection |
 | **Grafana** | 3000 | Monitoring dashboards |
 
-## 🔗 **API Endpoints**
+## 🔗 **Complete API Reference**
 
-### Authentication
-- `POST /api/v1/auth/register` - Register new user
-- `POST /api/v1/auth/login` - User login
-- `GET /api/v1/auth/me` - Get current user
+### 🔐 **Authentication Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/auth/register` | Register new user account | ❌ |
+| `POST` | `/api/v1/auth/login` | Login and get access token | ❌ |
+| `GET` | `/api/v1/auth/me` | Get current user profile | ✅ |
 
-### Pet Management  
-- `POST /api/v1/pets/` - Create new pet
-- `GET /api/v1/pets/` - List user's pets
-- `GET /api/v1/pets/{id}` - Get pet with symptoms
-- `PUT /api/v1/pets/{id}` - Update pet information
-- `DELETE /api/v1/pets/{id}` - Delete pet
+### 👤 **User Management Endpoints**  
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/api/v1/users/me` | Get current user profile | ✅ |
+| `PUT` | `/api/v1/users/me` | Update user profile (email, username, password) | ✅ |
+| `DELETE` | `/api/v1/users/me` | Delete user account and all data | ✅ |
 
-### Symptoms & AI Analysis
-- `POST /api/v1/symptoms/` - Log new symptom
-- `GET /api/v1/symptoms/pet/{id}` - Get pet's symptom history
-- `POST /api/v1/symptoms/analyze` - AI symptom analysis
+### 🐕 **Pet Management Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/pets/` | Create new pet | ✅ |
+| `GET` | `/api/v1/pets/` | List user's pets | ✅ |
+| `GET` | `/api/v1/pets/{pet_id}` | Get specific pet with symptoms & assessments | ✅ |
+| `PUT` | `/api/v1/pets/{pet_id}` | Update pet information | ✅ |
+| `DELETE` | `/api/v1/pets/{pet_id}` | Delete pet and all associated data | ✅ |
 
-## 🧪 **Testing the API**
+### 🔄 **Veterinary Sync Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/pets/{pet_id}/sync` | Sync single pet with external vet system | ✅ |
+| `POST` | `/api/v1/pets/sync-all` | Sync all user's pets with vet system | ✅ |
 
-### Register a new user:
+### 🩺 **Symptom Tracking Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/symptoms/` | Create new symptom record | ✅ |
+| `GET` | `/api/v1/symptoms/pet/{pet_id}` | Get all symptoms for specific pet | ✅ |
+| `GET` | `/api/v1/symptoms/my-pets` | Get all symptoms for user's pets | ✅ |
+| `GET` | `/api/v1/symptoms/{symptom_id}` | Get specific symptom details | ✅ |
+| `PUT` | `/api/v1/symptoms/{symptom_id}` | Update symptom information | ✅ |
+| `DELETE` | `/api/v1/symptoms/{symptom_id}` | Delete symptom record | ✅ |
+
+### 🤖 **AI Assessment Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/api/v1/symptoms/assess` | Create AI-powered symptom assessment | ✅ |
+| `GET` | `/api/v1/symptoms/assessments/pet/{pet_id}` | Get all AI assessments for pet | ✅ |
+| `GET` | `/api/v1/symptoms/assessments/my-pets` | Get all assessments for user's pets | ✅ |
+| `GET` | `/api/v1/symptoms/assessments/{assessment_id}` | Get specific AI assessment | ✅ |
+
+### 🏥 **Health & Utility Endpoints**
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/` | Root endpoint | ❌ |
+| `GET` | `/health` | System health check | ❌ |
+| `GET` | `/docs` | Interactive API documentation | ❌ |
+| `GET` | `/openapi.json` | OpenAPI specification | ❌ |
+
+## 🧪 **API Usage Examples**
+
+### 1. **User Registration & Authentication**
 ```bash
+# Register a new user
 curl -X POST "http://localhost:8000/api/v1/auth/register" \
      -H "Content-Type: application/json" \
      -d '{"email": "test@example.com", "password": "securepassword"}'
-```
 
-### Login and get token:
-```bash
+# Login to get access token
 curl -X POST "http://localhost:8000/api/v1/auth/login" \
      -H "Content-Type: application/x-www-form-urlencoded" \
      -d "username=test@example.com&password=securepassword"
+
+# Update user profile
+curl -X PUT "http://localhost:8000/api/v1/users/me" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"username": "petlover", "email": "newemail@example.com"}'
 ```
 
-### Create a pet (use token from login):
+### 2. **Pet Management**
 ```bash
+# Create a new pet
 curl -X POST "http://localhost:8000/api/v1/pets/" \
      -H "Authorization: Bearer YOUR_TOKEN_HERE" \
      -H "Content-Type: application/json" \
      -d '{"name": "Buddy", "species": "dog", "breed": "Golden Retriever", "age_years": 3}'
+
+# Get pet with symptoms and assessments
+curl -X GET "http://localhost:8000/api/v1/pets/PET_ID_HERE" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE"
+
+# Update pet information
+curl -X PUT "http://localhost:8000/api/v1/pets/PET_ID_HERE" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"weight_kg": 25.5, "age_years": 4}'
 ```
 
-## 🔧 **Development**
+### 3. **Symptom Tracking**
+```bash
+# Log a new symptom
+curl -X POST "http://localhost:8000/api/v1/symptoms/" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "pet_id": "PET_ID_HERE",
+       "symptom_name": "vomiting", 
+       "severity": "moderate",
+       "description": "Threw up twice this morning",
+       "observed_at": "2025-11-30T08:30:00Z",
+       "duration_hours": 2
+     }'
+
+# Get all symptoms for a pet
+curl -X GET "http://localhost:8000/api/v1/symptoms/pet/PET_ID_HERE" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### 4. **AI-Powered Symptom Assessment**
+```bash
+# Create comprehensive AI assessment
+curl -X POST "http://localhost:8000/api/v1/symptoms/assess" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "pet_id": "PET_ID_HERE",
+       "symptoms": [
+         {
+           "pet_id": "PET_ID_HERE",
+           "symptom_name": "lethargy",
+           "severity": "moderate", 
+           "observed_at": "2025-11-30T08:00:00Z",
+           "duration_hours": 12
+         },
+         {
+           "pet_id": "PET_ID_HERE", 
+           "symptom_name": "loss of appetite",
+           "severity": "severe",
+           "observed_at": "2025-11-30T07:00:00Z", 
+           "duration_hours": 24
+         }
+       ]
+     }'
+
+# Get AI assessment results
+curl -X GET "http://localhost:8000/api/v1/symptoms/assessments/pet/PET_ID_HERE" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### 5. **Veterinary Clinic Integration**
+```bash
+# Sync single pet with external vet system
+curl -X POST "http://localhost:8000/api/v1/pets/PET_ID_HERE/sync" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"vet_clinic_id": "clinic_123", "include_assessments": true}'
+
+# Sync all pets with vet system  
+curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     -H "Content-Type: application/json" \
+     -d '{"vet_clinic_id": "clinic_123"}'
+```
+
+## � **Data Models & Response Formats**
+
+### **User Model**
+```json
+{
+  "id": "uuid-string",
+  "email": "user@example.com", 
+  "username": "optional-username",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-11-30T12:00:00Z",
+  "updated_at": "2025-11-30T12:00:00Z"
+}
+```
+
+### **Pet Model** 
+```json
+{
+  "id": "uuid-string",
+  "user_id": "user-uuid",
+  "name": "Buddy",
+  "species": "dog", 
+  "breed": "Golden Retriever",
+  "age_years": 3,
+  "weight_kg": 25.5,
+  "microchip_id": "optional-chip-id",
+  "medical_notes": "No known allergies",
+  "created_at": "2025-11-30T12:00:00Z",
+  "updated_at": "2025-11-30T12:00:00Z"
+}
+```
+
+### **Pet with Symptoms & Assessments**
+```json
+{
+  "id": "uuid-string",
+  "name": "Buddy",
+  "species": "dog",
+  "breed": "Golden Retriever", 
+  "symptoms": [
+    {
+      "id": "symptom-uuid",
+      "symptom_name": "vomiting",
+      "severity": "moderate",
+      "observed_at": "2025-11-30T08:30:00Z",
+      "duration_hours": 2
+    }
+  ],
+  "assessments": [
+    {
+      "id": "assessment-uuid", 
+      "urgency_level": "medium",
+      "ai_analysis": "Based on symptoms...",
+      "recommendations": "Monitor closely; contact vet if worsens",
+      "created_at": "2025-11-30T09:00:00Z"
+    }
+  ]
+}
+```
+
+### **AI Assessment Response**
+```json
+{
+  "id": "assessment-uuid",
+  "pet_id": "pet-uuid", 
+  "symptoms_json": [...],
+  "ai_analysis": "Based on the analysis of 2 reported symptoms: lethargy, loss of appetite. These symptoms suggest a condition that should be monitored and may require veterinary consultation.",
+  "urgency_level": "medium",
+  "recommendations": "Monitor symptoms for 24-48 hours; Schedule routine veterinary appointment if symptoms persist; Ensure pet is comfortable and well-hydrated",
+  "ai_provider": "mock_ai_v1",
+  "processing_time_ms": 145,
+  "created_at": "2025-11-30T09:00:00Z"
+}
+```
+
+### **Urgency Levels**
+- **`emergency`**: Immediate veterinary attention required
+- **`high`**: Veterinary consultation within 24 hours
+- **`medium`**: Monitor closely, vet consultation recommended
+- **`low`**: Continue monitoring, routine care sufficient
+
+## �🔧 **Development**
 
 ### Local Development Setup
 ```bash

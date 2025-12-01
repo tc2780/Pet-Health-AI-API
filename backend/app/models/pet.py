@@ -2,7 +2,6 @@
 Pet model for storing pet information
 """
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Boolean
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -13,8 +12,8 @@ from app.core.database import Base
 class Pet(Base):
     __tablename__ = "pets"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)
     species = Column(String(50), nullable=False)
     breed = Column(String(100))
