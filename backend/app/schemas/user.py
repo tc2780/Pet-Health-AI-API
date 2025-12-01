@@ -1,0 +1,54 @@
+"""
+User schemas for request/response validation
+"""
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+from pydantic import BaseModel, EmailStr, ConfigDict
+
+
+# Base user schema
+class UserBase(BaseModel):
+    email: EmailStr
+
+
+# User creation schema
+class UserCreate(UserBase):
+    password: str
+
+
+# User update schema
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+
+
+# User response schema
+class User(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: UUID
+    is_active: bool
+    is_verified: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+# User with pets schema
+class UserWithPets(User):
+    pets: list["Pet"] = []
+
+
+# Login schemas
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
