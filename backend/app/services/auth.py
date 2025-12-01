@@ -1,6 +1,7 @@
 """
 Authentication service for token handling
 """
+from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,13 +25,19 @@ async def get_current_user_from_token(token: str, db: AsyncSession) -> User:
     if payload is None:
         raise credentials_exception
     
-    email: str = payload.get("sub")
-    if email is None:
+    user_id_str: str = payload.get("sub")
+    if user_id_str is None:
+        raise credentials_exception
+    
+    # Convert string UUID back to UUID object
+    try:
+        user_id = UUID(user_id_str)
+    except (ValueError, AttributeError):
         raise credentials_exception
     
     # Get user from database
     user_service = UserService(db)
-    user = await user_service.get_user_by_email(email)
+    user = await user_service.get_user_by_id(user_id)
     if user is None:
         raise credentials_exception
     

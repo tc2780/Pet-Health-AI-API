@@ -60,7 +60,7 @@ class PetService:
         if not pet:
             return None
         
-        update_data = pet_data.dict(exclude_unset=True)
+        update_data = pet_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(pet, field, value)
         

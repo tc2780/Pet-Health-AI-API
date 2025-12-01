@@ -3,6 +3,7 @@ Security utilities for authentication and password hashing
 """
 from datetime import datetime, timedelta
 from typing import Optional
+from uuid import UUID
 import bcrypt
 from jose import JWTError, jwt
 
@@ -14,6 +15,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     Create JWT access token
     """
     to_encode = data.copy()
+    
+    # Convert UUID objects to strings for JSON serialization
+    for key, value in to_encode.items():
+        if isinstance(value, UUID):
+            to_encode[key] = str(value)
+    
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:

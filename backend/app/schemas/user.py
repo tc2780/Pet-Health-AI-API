@@ -3,6 +3,7 @@ User schemas for request/response validation
 """
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, ConfigDict
 
 
@@ -28,7 +29,7 @@ class UserUpdate(BaseModel):
 class User(UserBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
+    id: UUID
     is_active: bool
     is_verified: bool
     created_at: datetime

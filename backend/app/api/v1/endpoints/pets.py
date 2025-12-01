@@ -2,6 +2,7 @@
 Pet management endpoints
 """
 from typing import List
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +54,7 @@ async def get_user_pets(
 
 @router.get("/{pet_id}", response_model=PetWithSymptoms)
 async def get_pet(
-    pet_id: str,
+    pet_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -81,7 +82,7 @@ async def get_pet(
 
 @router.put("/{pet_id}", response_model=Pet)
 async def update_pet(
-    pet_id: str,
+    pet_id: UUID,
     pet_data: PetUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
@@ -111,7 +112,7 @@ async def update_pet(
 
 @router.delete("/{pet_id}")
 async def delete_pet(
-    pet_id: str,
+    pet_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -146,7 +147,7 @@ async def delete_pet(
 
 @router.post("/{pet_id}/sync")
 async def sync_pet_with_vet(
-    pet_id: str,
+    pet_id: UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db_session)
 ):

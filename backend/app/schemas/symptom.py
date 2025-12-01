@@ -3,6 +3,7 @@ Symptom schemas for request/response validation
 """
 from datetime import datetime
 from typing import Any, Dict, Optional
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
@@ -17,7 +18,7 @@ class SymptomBase(BaseModel):
 
 # Symptom creation schema
 class SymptomCreate(SymptomBase):
-    pet_id: str
+    pet_id: UUID
 
 
 # Symptom update schema
@@ -33,8 +34,8 @@ class SymptomUpdate(BaseModel):
 class Symptom(SymptomBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    pet_id: str
+    id: UUID
+    pet_id: UUID
     created_at: datetime
 
 
@@ -47,15 +48,15 @@ class SymptomAssessmentBase(BaseModel):
 
 
 class SymptomAssessmentCreate(BaseModel):
-    pet_id: str
+    pet_id: UUID
     symptoms: list[SymptomCreate]
 
 
 class SymptomAssessment(SymptomAssessmentBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    pet_id: str
+    id: UUID
+    pet_id: UUID
     ai_provider: Optional[str] = None
     processing_time_ms: Optional[int] = None
     created_at: datetime

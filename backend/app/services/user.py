@@ -51,7 +51,7 @@ class UserService:
         if not user:
             return None
         
-        update_data = user_data.dict(exclude_unset=True)
+        update_data = user_data.model_dump(exclude_unset=True)
         if "password" in update_data:
             update_data["password_hash"] = get_password_hash(update_data.pop("password"))
         

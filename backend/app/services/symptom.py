@@ -1,6 +1,8 @@
 """
 Symptom service for database operations and AI analysis
 """
+import json
+import aiohttp
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import time
@@ -98,7 +100,7 @@ class SymptomService:
             ai_analysis=ai_analysis_result["analysis"],
             urgency_level=ai_analysis_result["urgency_level"],
             recommendations=ai_analysis_result["recommendations"],
-            ai_provider="mock_ai_v1",
+            ai_provider="ollama_llama3.2:3b" if "Fallback" not in ai_analysis_result["analysis"] else "fallback_rules",
             processing_time_ms=processing_time
         )
         
@@ -141,55 +143,27 @@ class SymptomService:
     
     async def _analyze_symptoms_with_ai(self, pet_id: str, symptoms: List[Dict]) -> Dict[str, Any]:
         """
-        Mock AI analysis of symptoms
-        In production, this would call the actual AI service (Ollama, OpenAI, etc.)
+        AI analysis of symptoms using local Ollama LLM
         """
-        # Simple rule-based mock analysis
-        urgency_keywords = {
-            'emergency': ['bleeding', 'unconscious', 'seizure', 'difficulty breathing', 'choking'],
-            'high': ['vomiting', 'diarrhea', 'fever', 'pain', 'limping severely'],
-            'medium': ['lethargy', 'loss of appetite', 'coughing', 'sneezing'],
-            'low': ['minor scratching', 'slight behavior change']
-        }
-        
-        urgency_level = 'low'
-        severity_scores = []
-        
-        for symptom in symptoms:
-            symptom_name = symptom.get('symptom_name', '').lower()
-            severity = symptom.get('severity', 'mild')
+        try:
+            # Get pet information for context
+            pet_info = await self._get_pet_context(pet_id)
             
-            # Check for emergency keywords
-            for level, keywords in urgency_keywords.items():
-                if any(keyword in symptom_name for keyword in keywords):
-                    if level == 'emergency':
-                        urgency_level = 'emergency'
-                        break
-                    elif level == 'high' and urgency_level not in ['emergency']:
-                        urgency_level = 'high'
-                    elif level == 'medium' and urgency_level not in ['emergency', 'high']:
-                        urgency_level = 'medium'
+            # Create structured prompt
+            prompt = self._create_veterinary_prompt(pet_info, symptoms)
             
-            # Factor in severity
-            severity_score = {'mild': 1, 'moderate': 2, 'severe': 3}.get(severity, 1)
-            severity_scores.append(severity_score)
-        
-        # Adjust urgency based on severity
-        avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 1
-        if avg_severity >= 2.5 and urgency_level == 'low':
-            urgency_level = 'medium'
-        elif avg_severity >= 3 and urgency_level in ['low', 'medium']:
-            urgency_level = 'high'
-        
-        # Generate analysis and recommendations
-        analysis = self._generate_analysis(symptoms, urgency_level, avg_severity)
-        recommendations = self._generate_recommendations(urgency_level, symptoms)
-        
-        return {
-            "analysis": analysis,
-            "urgency_level": urgency_level,
-            "recommendations": recommendations
-        }
+            # Call Ollama API
+            ai_response = await self._call_ollama_api(prompt)
+            
+            # Parse and validate response
+            parsed_response = self._parse_ai_response(ai_response)
+            
+            return parsed_response
+            
+        except Exception as e:
+            # Fallback to rule-based analysis if AI fails
+            print(f"AI analysis failed, using fallback: {str(e)}")
+            return await self._fallback_analysis(symptoms)
     
     def _generate_analysis(self, symptoms: List[Dict], urgency: str, severity: float) -> str:
         """Generate mock AI analysis text"""
@@ -248,3 +222,171 @@ class SymptomService:
             ]
         
         return "; ".join(recommendations)
+    
+    async def _get_pet_context(self, pet_id: str) -> Dict[str, Any]:
+        """Get pet information for AI context"""
+        from app.models.pet import Pet
+        result = await self.db.execute(
+            select(Pet).where(Pet.id == pet_id)
+        )
+        pet = result.scalar_one_or_none()
+        
+        if not pet:
+            return {
+                "species": "unknown",
+                "breed": "unknown", 
+                "age": "unknown",
+                "weight": "unknown"
+            }
+        
+        return {
+            "species": pet.species,
+            "breed": pet.breed or "mixed",
+            "age": f"{pet.age_years} years" if pet.age_years else "unknown",
+            "weight": f"{pet.weight_kg} kg" if pet.weight_kg else "unknown"
+        }
+    
+    def _create_veterinary_prompt(self, pet_info: Dict, symptoms: List[Dict]) -> str:
+        """Create structured prompt for veterinary AI analysis"""
+        symptoms_text = []
+        for symptom in symptoms:
+            symptom_desc = f"- {symptom.get('symptom_name', 'Unknown symptom')}"
+            if symptom.get('severity'):
+                symptom_desc += f" (severity: {symptom.get('severity')})"
+            if symptom.get('description'):
+                symptom_desc += f" - {symptom.get('description')}"
+            symptoms_text.append(symptom_desc)
+        
+        prompt = f"""You are Dr. VetAI, a professional veterinary consultation assistant with extensive experience in animal health. Analyze the following case and provide a structured assessment.
+
+PET INFORMATION:
+- Species: {pet_info.get('species', 'unknown')}
+- Breed: {pet_info.get('breed', 'unknown')}
+- Age: {pet_info.get('age', 'unknown')}
+- Weight: {pet_info.get('weight', 'unknown')}
+
+REPORTED SYMPTOMS:
+{chr(10).join(symptoms_text)}
+
+IMPORTANT GUIDELINES:
+- Always emphasize that this is preliminary guidance, not a diagnosis
+- Recommend professional veterinary care for concerning symptoms
+- Focus on urgency assessment and immediate care steps
+- Be conservative in recommendations - when in doubt, recommend vet visit
+
+Please provide a JSON response with exactly these fields:
+{{
+  "urgency_level": "emergency|high|medium|low",
+  "analysis": "detailed analysis of symptoms and possible causes",
+  "recommendations": "specific care recommendations and when to seek professional help"
+}}
+
+Respond only with the JSON object, no other text."""
+
+        return prompt
+    
+    async def _call_ollama_api(self, prompt: str) -> str:
+        """Call local Ollama API"""
+        ollama_url = "http://localhost:11434/api/generate"
+        
+        payload = {
+            "model": "llama3.2:3b",  # Using smaller model for faster response
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.3,  # Lower temperature for more consistent medical advice
+                "top_p": 0.9,
+                "num_predict": 500   # Limit response length
+            }
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(ollama_url, json=payload, timeout=30) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result.get("response", "")
+                else:
+                    raise Exception(f"Ollama API error: {response.status}")
+    
+    def _parse_ai_response(self, ai_response: str) -> Dict[str, Any]:
+        """Parse and validate AI response"""
+        try:
+            # Try to extract JSON from response
+            ai_response = ai_response.strip()
+            if ai_response.startswith("```json"):
+                ai_response = ai_response[7:]
+            if ai_response.endswith("```"):
+                ai_response = ai_response[:-3]
+            
+            parsed = json.loads(ai_response.strip())
+            
+            # Validate required fields
+            required_fields = ["urgency_level", "analysis", "recommendations"]
+            for field in required_fields:
+                if field not in parsed:
+                    raise ValueError(f"Missing required field: {field}")
+            
+            # Validate urgency level
+            valid_urgency = ["emergency", "high", "medium", "low"]
+            if parsed["urgency_level"] not in valid_urgency:
+                parsed["urgency_level"] = "medium"  # Default to medium if invalid
+            
+            return parsed
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Failed to parse AI response: {e}")
+            # Return structured response from raw text
+            return {
+                "urgency_level": "medium",
+                "analysis": f"AI Analysis: {ai_response[:200]}..." if len(ai_response) > 200 else ai_response,
+                "recommendations": "Please monitor your pet and consult with a veterinarian if symptoms persist or worsen."
+            }
+    
+    async def _fallback_analysis(self, symptoms: List[Dict]) -> Dict[str, Any]:
+        """Fallback rule-based analysis when AI is unavailable"""
+        # Simple rule-based analysis (original mock logic)
+        urgency_keywords = {
+            'emergency': ['bleeding', 'unconscious', 'seizure', 'difficulty breathing', 'choking'],
+            'high': ['vomiting', 'diarrhea', 'fever', 'pain', 'limping severely'],
+            'medium': ['lethargy', 'loss of appetite', 'coughing', 'sneezing'],
+            'low': ['minor scratching', 'slight behavior change']
+        }
+        
+        urgency_level = 'low'
+        severity_scores = []
+        
+        for symptom in symptoms:
+            symptom_name = symptom.get('symptom_name', '').lower()
+            severity = symptom.get('severity', 'mild')
+            
+            # Check for emergency keywords
+            for level, keywords in urgency_keywords.items():
+                if any(keyword in symptom_name for keyword in keywords):
+                    if level == 'emergency':
+                        urgency_level = 'emergency'
+                        break
+                    elif level == 'high' and urgency_level not in ['emergency']:
+                        urgency_level = 'high'
+                    elif level == 'medium' and urgency_level not in ['emergency', 'high']:
+                        urgency_level = 'medium'
+            
+            # Factor in severity
+            severity_score = {'mild': 1, 'moderate': 2, 'severe': 3}.get(severity, 1)
+            severity_scores.append(severity_score)
+        
+        # Adjust urgency based on severity
+        avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 1
+        if avg_severity >= 2.5 and urgency_level == 'low':
+            urgency_level = 'medium'
+        elif avg_severity >= 3 and urgency_level in ['low', 'medium']:
+            urgency_level = 'high'
+        
+        # Generate analysis and recommendations
+        analysis = self._generate_analysis(symptoms, urgency_level, avg_severity)
+        recommendations = self._generate_recommendations(urgency_level, symptoms)
+        
+        return {
+            "analysis": f"Fallback Analysis: {analysis}",
+            "urgency_level": urgency_level,
+            "recommendations": recommendations
+        }

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, TYPE_CHECKING
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
@@ -42,8 +43,8 @@ class PetUpdate(BaseModel):
 class Pet(PetBase):
     model_config = ConfigDict(from_attributes=True)
     
-    id: str
-    user_id: str
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
