@@ -147,9 +147,11 @@ class TestPetAPIIntegration:
         assert "results" in sync_all_data
         assert len(sync_all_data["results"]) >= 1
         
-        # Verify sync result structure
+        # Verify sync result structure - results follow SyncResult schema
         result = sync_all_data["results"][0]
-        assert "pet_id" in result
-        assert "synced" in result
+        assert "success" in result
         assert "synced_at" in result
-        assert result["synced"] is True
+        assert result["success"] is True
+        # Check that payload_summary contains pet_id
+        assert result["payload_summary"] is not None
+        assert result["payload_summary"]["pet_id"] == pet_id

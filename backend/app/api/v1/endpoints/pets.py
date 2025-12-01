@@ -178,14 +178,20 @@ async def sync_all_user_pets(
     """Trigger a mock sync for all pets belonging to the current user."""
     vet_sync = VetSyncService(db)
     results = await vet_sync.sync_all_user_pets(current_user.id)
-    # Convert simple dict results into list of SyncResult-compatible dicts
+    # Convert the results to match SyncResult schema
     normalized = []
     for r in results:
         normalized.append({
             "success": r.get("synced", False),
-            "clinic_id": r.get("clinic_id"),
+            "clinic_id": None,  # Not provided in sync_all_user_pets
             "synced_at": r.get("synced_at"),
-            "payload_summary": r.get("payload_summary"),
-            "reason": r.get("reason"),
+            "payload_summary": {
+                "pet_id": r.get("pet_id"),
+                "name": None,
+                "species": None, 
+                "age_years": None,
+                "symptoms_count": 0
+            } if r.get("pet_id") else None,
+            "reason": None,
         })
     return {"results": normalized}
