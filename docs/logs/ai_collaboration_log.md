@@ -1,0 +1,5 @@
+# AI Collaboration Log
+
+| Date | Tool | Prompt / Context | Output Summary | Keep / Modify / Discard | Rationale |
+| ---- | ---- | ---------------- | -------------- | ----------------------- | --------- |
+| 2025-11-30 | GitHub Copilot | Starting to implement comprehensive capstone documentation with AI assistance, ongoing documentation planning | Complete professional documentation suite: Created logical folder structure (system-design/, operations/, compliance/, testing/, logs/); Organized 14+ documents covering all capstone requirements (architecture, ADRs, ethics, testing, deployment); Cleaned up file references and maintained clean repository structure | Keep | Essential for capstone success. AI collaboration enabled rapid creation of production-quality documentation while maintaining academic integrity. Professional organization demonstrates software engineering best practices required for evaluation. |
