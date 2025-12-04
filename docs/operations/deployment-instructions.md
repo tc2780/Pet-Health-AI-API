@@ -78,11 +78,11 @@ docker-compose exec api python scripts/seed_data.py
 ### **5. AI Model Setup**
 ```bash
 # Pull Ollama model (for local AI)
-docker-compose exec ollama ollama pull llama3.1
+docker-compose exec ollama ollama pull llama3.2:3b
 
 # Test AI service
 curl http://localhost:11434/api/generate \
-  -d '{"model": "llama3.1", "prompt": "Hello, world!", "stream": false}'
+  -d '{"model": "llama3.2:3b", "prompt": "Hello, world!", "stream": false}'
 ```
 
 ## Production Deployment Options
