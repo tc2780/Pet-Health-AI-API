@@ -45,6 +45,7 @@ class SymptomAssessmentBase(BaseModel):
     ai_analysis: Optional[str] = None
     urgency_level: str  # 'low', 'medium', 'high', 'emergency'
     recommendations: Optional[str] = None
+    possible_causes: Optional[list[str]] = None
 
 
 class SymptomAssessmentCreate(BaseModel):

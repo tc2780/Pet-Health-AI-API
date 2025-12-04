@@ -240,7 +240,6 @@ async def test_no_third_party_data_sharing(client: AsyncClient):
 # P3: User Control Tests
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Export endpoint not yet implemented - would need /api/v1/users/me/export")
 async def test_complete_data_export(client: AsyncClient):
     """Test user can export all their data"""
     auth_headers = await get_auth_headers(client)
@@ -390,8 +389,20 @@ async def test_emergency_symptom_immediate_vet_referral(client: AsyncClient):
     pet_id = await create_test_pet(client, auth_headers)
     
     emergency_symptoms = [
-        {"name": "difficulty breathing", "severity": "severe"},
-        {"name": "seizure", "severity": "severe"}
+        {
+            "pet_id": str(pet_id),
+            "symptom_name": "difficulty breathing", 
+            "severity": "severe",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 2
+        },
+        {
+            "pet_id": str(pet_id),
+            "symptom_name": "seizure", 
+            "severity": "severe",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 1
+        }
     ]
     
     response = await client.post(
@@ -407,7 +418,7 @@ async def test_emergency_symptom_immediate_vet_referral(client: AsyncClient):
     assert data.get("urgency_level") in ["high", "emergency", "severe"]
     
     # Should recommend immediate vet care
-    recommendations = " ".join(data.get("recommendations", [])).lower()
+    recommendations = data.get("recommendations", "").lower()
     assert "immediate" in recommendations or "emergency" in recommendations
 
 
@@ -420,8 +431,20 @@ async def test_conservative_urgency_assessment(client: AsyncClient):
     pet_id = await create_test_pet(client, auth_headers)
     
     ambiguous_symptoms = [
-        {"name": "mild lethargy", "severity": "mild"},
-        {"name": "decreased appetite", "severity": "mild"}
+        {
+            "pet_id": str(pet_id),
+            "symptom_name": "mild lethargy", 
+            "severity": "mild",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 12
+        },
+        {
+            "pet_id": str(pet_id),
+            "symptom_name": "decreased appetite", 
+            "severity": "mild",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 6
+        }
     ]
     
     response = await client.post(
@@ -541,10 +564,19 @@ async def test_species_appropriate_advice(client: AsyncClient):
     """Test AI provides species-appropriate advice"""
     auth_headers = await get_auth_headers(client)
     
-    hairball_symptom = [{"name": "hairball", "severity": "mild"}]
+    hairball_symptom = [
+        {
+            "pet_id": "placeholder",  # Will be replaced below
+            "symptom_name": "hairball", 
+            "severity": "mild",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 6
+        }
+    ]
     
     # Test cat (appropriate)
     cat_id = await create_test_pet_with_data(client, {"name": "Whiskers", "species": "cat"}, auth_headers)
+    hairball_symptom[0]["pet_id"] = str(cat_id)
     cat_response = await client.post(
         "/api/v1/symptoms/assess",
         json={"pet_id": str(cat_id), "symptoms": hairball_symptom},
@@ -553,6 +585,7 @@ async def test_species_appropriate_advice(client: AsyncClient):
     
     # Test dog (inappropriate symptom)
     dog_id = await create_test_pet_with_data(client, {"name": "Buddy", "species": "dog"}, auth_headers)
+    hairball_symptom[0]["pet_id"] = str(dog_id)
     dog_response = await client.post(
         "/api/v1/symptoms/assess",
         json={"pet_id": str(dog_id), "symptoms": hairball_symptom},
@@ -570,7 +603,6 @@ async def test_equal_access_across_pet_types(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     
     species_to_test = ["dog", "cat", "rabbit", "bird"]
-    common_symptom = [{"name": "not eating", "severity": "moderate"}]
     
     for species in species_to_test:
         pet_id = await create_test_pet_with_data(client,
@@ -581,6 +613,16 @@ async def test_equal_access_across_pet_types(client: AsyncClient):
             },
             auth_headers
         )
+        
+        common_symptom = [
+            {
+                "pet_id": str(pet_id),
+                "symptom_name": "not eating", 
+                "severity": "moderate",
+                "observed_at": datetime.now().isoformat(),
+                "duration_hours": 8
+            }
+        ]
         
         response = await client.post(
             "/api/v1/symptoms/assess",

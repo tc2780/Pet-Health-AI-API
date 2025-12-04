@@ -37,6 +37,7 @@ class SymptomAssessment(Base):
     ai_analysis = Column(Text)
     urgency_level = Column(String(20), nullable=False)  # 'low', 'medium', 'high', 'emergency'
     recommendations = Column(Text)
+    possible_causes = Column(JSON)  # Store possible causes as JSON array
     ai_provider = Column(String(50))  # Track which AI provider was used
     processing_time_ms = Column(Integer)  # Track response times
     created_at = Column(DateTime(timezone=True), server_default=func.now())

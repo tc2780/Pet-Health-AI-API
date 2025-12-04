@@ -40,7 +40,7 @@ class TestSymptomServicePrivateMethods:
         result = symptom_service._parse_ai_response(response_text)
         
         assert result is not None
-        assert result["urgency_level"] == "medium"
+        assert result["urgency_level"] == "moderate"  # "medium" should be normalized to "moderate"
     
     def test_parse_ai_response_with_whitespace(self, symptom_service):
         """Test parsing AI response with extra whitespace"""
@@ -77,7 +77,7 @@ class TestSymptomServicePrivateMethods:
         result = symptom_service._parse_ai_response(response_text)
         
         assert result is not None  # Service provides fallback
-        assert result["urgency_level"] in ["emergency", "high", "medium", "low"]
+        assert result["urgency_level"] in ["emergency", "high", "moderate", "low"]
     
     async def test_fallback_analysis(self, symptom_service):
         """Test fallback analysis when AI is unavailable"""
@@ -93,7 +93,7 @@ class TestSymptomServicePrivateMethods:
         result = await symptom_service._fallback_analysis(symptoms_data)
         
         assert result is not None
-        assert result["urgency_level"] in ["emergency", "high", "medium", "low"]
+        assert result["urgency_level"] in ["emergency", "high", "moderate", "low"]
         assert "lethargy" in result["analysis"]
         assert "veterinary" in result["recommendations"].lower()
         assert len(result["analysis"]) > 20
@@ -105,7 +105,7 @@ class TestSymptomServicePrivateMethods:
             {"symptom_name": "lethargy", "severity": "moderate"},
             {"symptom_name": "loss of appetite", "severity": "mild"}
         ]
-        urgency = "medium"
+        urgency = "moderate"  # Use "moderate" instead of "medium"
         severity = 1.5
         
         result = symptom_service._generate_analysis(symptoms, urgency, severity)
@@ -129,7 +129,11 @@ class TestSymptomServicePrivateMethods:
         high_rec = symptom_service._generate_recommendations("high", symptoms)
         assert "24 hours" in high_rec or "24-hour" in high_rec
         
-        # Test medium priority recommendations
+        # Test moderate priority recommendations (test both "medium" and "moderate" for backward compatibility)
+        moderate_rec = symptom_service._generate_recommendations("moderate", symptoms)
+        assert "monitor" in moderate_rec.lower()
+        
+        # Test that "medium" also works (backward compatibility)
         medium_rec = symptom_service._generate_recommendations("medium", symptoms)
         assert "monitor" in medium_rec.lower()
         
@@ -321,7 +325,7 @@ class TestEdgeCasesAndErrorHandling:
             for i in range(10)
         ]
         
-        result = symptom_service._generate_analysis(symptoms, "medium", 1.5)
+        result = symptom_service._generate_analysis(symptoms, "moderate", 1.5)  # Use "moderate"
         
         assert isinstance(result, str)
         assert "..." in result or "10 reported symptom" in result
@@ -337,7 +341,7 @@ class TestEdgeCasesAndErrorHandling:
         result = await symptom_service._fallback_analysis(malformed_symptoms)
         
         assert result is not None
-        assert result["urgency_level"] in ["emergency", "high", "medium", "low"]
+        assert result["urgency_level"] in ["emergency", "high", "moderate", "low"]
     
     async def test_get_pet_context_partial_pet_data(self, symptom_service):
         """Test getting pet context with incomplete pet data"""
@@ -390,7 +394,7 @@ class TestUtilityLogic:
         result = symptom_service._parse_ai_response(response_text)
         
         assert result is not None
-        assert result["urgency_level"] == "medium"
+        assert result["urgency_level"] == "moderate"  # "medium" should be normalized to "moderate"
     
     def test_parse_ai_response_invalid_json(self, symptom_service):
         """Test handling invalid JSON in AI response"""
@@ -430,7 +434,7 @@ class TestUtilityLogic:
         result = symptom_service._create_fallback_analysis(symptoms_data)
         
         assert result is not None
-        assert result["urgency_level"] in ["emergency", "high", "medium", "low"]
+        assert result["urgency_level"] in ["emergency", "high", "moderate", "low"]
         assert "lethargy" in result["analysis"]
         assert "veterinary care" in result["recommendations"]
         assert len(result["analysis"]) > 20

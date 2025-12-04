@@ -73,7 +73,7 @@ class TestAISymptomAnalysis:
             analysis = await symptom_service._analyze_symptoms_with_ai(sample_pet.id, sample_symptoms)
             
             assert analysis is not None
-            assert analysis["urgency_level"] == "medium"
+            assert analysis["urgency_level"] == "moderate"
             assert "lethargy" in analysis["analysis"].lower()
             assert "vet" in analysis["recommendations"].lower()  # More flexible - matches "vet" or "veterinary"
             assert len(analysis["analysis"]) > 50
@@ -88,7 +88,7 @@ class TestAISymptomAnalysis:
             
             # Should return fallback analysis
             assert analysis is not None
-            assert analysis["urgency_level"] in ["emergency", "high", "medium", "low"]
+            assert analysis["urgency_level"] in ["emergency", "high", "moderate", "low"]
             assert "analysis" in analysis["analysis"].lower()  # More flexible - matches fallback format
             assert "vet" in analysis["recommendations"].lower()
             
@@ -99,7 +99,7 @@ class TestAISymptomAnalysis:
             '{"urgency_level": "high", "analysis": "Test analysis", "recommendations": "Test recommendations"}',
             
             # JSON with code blocks
-            '```json\n{"urgency_level": "medium", "analysis": "Test analysis", "recommendations": "Test recommendations"}\n```',
+            '```json\n{"urgency_level": "moderate", "analysis": "Test analysis", "recommendations": "Test recommendations"}\n```',
             
             # JSON with extra whitespace
             '\n\n  {"urgency_level": "low", "analysis": "Test analysis", "recommendations": "Test recommendations"}  \n\n',
@@ -127,7 +127,7 @@ class TestAISymptomAnalysis:
             
             # Should fallback to safe default
             assert analysis is not None
-            assert analysis["urgency_level"] in ["emergency", "high", "medium", "low"]
+            assert analysis["urgency_level"] in ["emergency", "high", "moderate", "low"]
             
     async def test_emergency_symptom_detection(self, symptom_service, sample_pet):
         """Test that emergency symptoms are properly prioritized"""

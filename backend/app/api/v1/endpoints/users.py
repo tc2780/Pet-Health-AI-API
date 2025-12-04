@@ -9,6 +9,7 @@ from app.core.database import get_db_session
 from app.schemas.user import User, UserUpdate
 from app.services.auth import get_current_user_from_token
 from app.services.user import UserService
+from app.services.vet_sync import VetSyncService
 from app.api.v1.endpoints.auth import oauth2_scheme
 
 router = APIRouter()
@@ -91,3 +92,31 @@ async def delete_current_user(
         )
     
     return {"message": "User account successfully deleted"}
+
+
+@router.get("/me/export")
+async def export_user_data(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """
+    Export all user data including pets, symptoms, assessments, and user profile.
+    
+    This endpoint provides comprehensive data export for compliance with data 
+    portability requirements and user data access rights.
+    """
+    vet_sync_service = VetSyncService(db)
+    
+    try:
+        export_data = await vet_sync_service.export_user_data(str(current_user.id))
+        return export_data
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export user data"
+        )

@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
-from app.models.symptom import Symptom, SymptomAssessment
-from app.schemas.symptom import SymptomCreate, SymptomUpdate, SymptomAssessmentCreate
+from app.models.symptom import Symptom, SymptomAssessment as SymptomAssessmentModel
+from app.schemas.symptom import SymptomCreate, SymptomUpdate, SymptomAssessmentCreate, SymptomAssessment as SymptomAssessmentSchema
 
 
 class SymptomService:
@@ -79,27 +79,45 @@ class SymptomService:
         return True
     
     # Assessment operations
-    async def create_assessment(self, assessment_data: SymptomAssessmentCreate) -> SymptomAssessment:
+    async def create_assessment(self, assessment_data: SymptomAssessmentCreate) -> SymptomAssessmentSchema:
         """Create a new symptom assessment with AI analysis"""
         start_time = time.time()
         
-        # Prepare symptoms data for AI analysis
-        symptoms_json = [symptom.model_dump() for symptom in assessment_data.symptoms]
+        # Prepare symptoms data for AI analysis with proper JSON serialization
+        symptoms_list = []
+        for symptom in assessment_data.symptoms:
+            symptom_dict = symptom.model_dump()
+            # Convert datetime to ISO format string for JSON serialization
+            if 'observed_at' in symptom_dict and symptom_dict['observed_at']:
+                symptom_dict['observed_at'] = symptom_dict['observed_at'].isoformat()
+            # Convert UUID to string for JSON serialization
+            if 'pet_id' in symptom_dict and symptom_dict['pet_id']:
+                symptom_dict['pet_id'] = str(symptom_dict['pet_id'])
+            symptoms_list.append(symptom_dict)
+        
+        # Wrap symptoms in a dictionary as expected by schema
+        symptoms_json = {
+            "symptoms": symptoms_list,
+            "assessment_timestamp": datetime.now().isoformat(),
+            "pet_id": str(assessment_data.pet_id)
+        }
         
         # Mock AI analysis (replace with actual AI service call)
         ai_analysis_result = await self._analyze_symptoms_with_ai(
             assessment_data.pet_id, 
-            symptoms_json
+            symptoms_list
         )
         
         processing_time = int((time.time() - start_time) * 1000)
         
-        assessment = SymptomAssessment(
+        # Create the SQLAlchemy model instance
+        assessment = SymptomAssessmentModel(
             pet_id=assessment_data.pet_id,
             symptoms_json=symptoms_json,
             ai_analysis=ai_analysis_result["analysis"],
             urgency_level=ai_analysis_result["urgency_level"],
             recommendations=ai_analysis_result["recommendations"],
+            possible_causes=ai_analysis_result.get("possible_causes", []),
             ai_provider="ollama_llama3.2:3b" if "Fallback" not in ai_analysis_result["analysis"] else "fallback_rules",
             processing_time_ms=processing_time
         )
@@ -108,36 +126,51 @@ class SymptomService:
         await self.db.commit()
         await self.db.refresh(assessment)
         
+        # Access all attributes while session is active to avoid detached instance errors
+        assessment_dict = {
+            'id': assessment.id,
+            'pet_id': assessment.pet_id,
+            'symptoms_json': assessment.symptoms_json,
+            'ai_analysis': assessment.ai_analysis,
+            'urgency_level': assessment.urgency_level,
+            'recommendations': assessment.recommendations,
+            'possible_causes': assessment.possible_causes,
+            'ai_provider': assessment.ai_provider,
+            'processing_time_ms': assessment.processing_time_ms,
+            'created_at': assessment.created_at
+        }
+
         # Also create individual symptom records
         for symptom_data in assessment_data.symptoms:
             await self.create_symptom(symptom_data)
-        
-        return assessment
+
+        # Convert to Pydantic schema for response using dict
+        return SymptomAssessmentSchema(**assessment_dict)
     
-    async def get_assessment_by_id(self, assessment_id: str) -> Optional[SymptomAssessment]:
+    async def get_assessment_by_id(self, assessment_id: str) -> Optional[SymptomAssessmentModel]:
         """Get assessment by ID"""
         result = await self.db.execute(
-            select(SymptomAssessment).where(SymptomAssessment.id == assessment_id)
+            select(SymptomAssessmentModel).where(SymptomAssessmentModel.id == assessment_id)
         )
         return result.scalar_one_or_none()
     
-    async def get_assessments_by_pet(self, pet_id: str) -> List[SymptomAssessment]:
+    async def get_assessments_by_pet(self, pet_id: str) -> List[SymptomAssessmentModel]:
         """Get all assessments for a specific pet"""
         result = await self.db.execute(
-            select(SymptomAssessment)
-            .where(SymptomAssessment.pet_id == pet_id)
-            .order_by(SymptomAssessment.created_at.desc())
+            select(SymptomAssessmentModel)
+            .where(SymptomAssessmentModel.pet_id == pet_id)
+            .order_by(SymptomAssessmentModel.created_at.desc())
         )
         return result.scalars().all()
     
-    async def get_assessments_by_user(self, user_id: str) -> List[SymptomAssessment]:
+    async def get_assessments_by_user(self, user_id: str) -> List[SymptomAssessmentModel]:
         """Get all assessments for all pets owned by a user"""
         from app.models.pet import Pet
         result = await self.db.execute(
-            select(SymptomAssessment)
-            .join(Pet, SymptomAssessment.pet_id == Pet.id)
+            select(SymptomAssessmentModel)
+            .join(Pet, SymptomAssessmentModel.pet_id == Pet.id)
             .where(Pet.user_id == user_id)
-            .order_by(SymptomAssessment.created_at.desc())
+            .order_by(SymptomAssessmentModel.created_at.desc())
         )
         return result.scalars().all()
     
@@ -204,7 +237,7 @@ class SymptomService:
                 "Ensure pet has access to fresh water",
                 "Consider temporary dietary restrictions if gastrointestinal symptoms present"
             ]
-        elif urgency == 'medium':
+        elif urgency in ['moderate', 'medium']:  # Handle both for backward compatibility
             recommendations = [
                 "Monitor symptoms for 24-48 hours",
                 "Schedule routine veterinary appointment if symptoms persist",
@@ -326,10 +359,17 @@ Respond only with the JSON object, no other text."""
                 if field not in parsed:
                     raise ValueError(f"Missing required field: {field}")
             
-            # Validate urgency level
-            valid_urgency = ["emergency", "high", "medium", "low"]
-            if parsed["urgency_level"] not in valid_urgency:
-                parsed["urgency_level"] = "medium"  # Default to medium if invalid
+            # Validate urgency level and normalize to standard values
+            valid_urgency_map = {
+                "emergency": "emergency",
+                "high": "high", 
+                "medium": "moderate",  # Map AI's "medium" to our standard "moderate"
+                "moderate": "moderate",
+                "low": "low"
+            }
+            
+            urgency_level = parsed.get("urgency_level", "moderate").lower()
+            parsed["urgency_level"] = valid_urgency_map.get(urgency_level, "moderate")  # Default to moderate if invalid
             
             return parsed
             
@@ -348,7 +388,7 @@ Respond only with the JSON object, no other text."""
         urgency_keywords = {
             'emergency': ['bleeding', 'unconscious', 'seizure', 'difficulty breathing', 'choking'],
             'high': ['vomiting', 'diarrhea', 'fever', 'pain', 'limping severely'],
-            'medium': ['lethargy', 'loss of appetite', 'coughing', 'sneezing'],
+            'moderate': ['lethargy', 'loss of appetite', 'coughing', 'sneezing'],
             'low': ['minor scratching', 'slight behavior change']
         }
         
@@ -367,8 +407,8 @@ Respond only with the JSON object, no other text."""
                         break
                     elif level == 'high' and urgency_level not in ['emergency']:
                         urgency_level = 'high'
-                    elif level == 'medium' and urgency_level not in ['emergency', 'high']:
-                        urgency_level = 'medium'
+                    elif level == 'moderate' and urgency_level not in ['emergency', 'high']:
+                        urgency_level = 'moderate'
             
             # Factor in severity
             severity_score = {'mild': 1, 'moderate': 2, 'severe': 3}.get(severity, 1)
@@ -377,16 +417,55 @@ Respond only with the JSON object, no other text."""
         # Adjust urgency based on severity
         avg_severity = sum(severity_scores) / len(severity_scores) if severity_scores else 1
         if avg_severity >= 2.5 and urgency_level == 'low':
-            urgency_level = 'medium'
-        elif avg_severity >= 3 and urgency_level in ['low', 'medium']:
+            urgency_level = 'moderate'
+        elif avg_severity >= 3 and urgency_level in ['low', 'moderate']:
             urgency_level = 'high'
         
         # Generate analysis and recommendations
         analysis = self._generate_analysis(symptoms, urgency_level, avg_severity)
         recommendations = self._generate_recommendations(urgency_level, symptoms)
         
+        # Add medical disclaimer
+        disclaimer = "IMPORTANT: This is not professional veterinary advice. This analysis is for educational purposes only. Please consult a licensed veterinarian for proper medical evaluation and diagnosis."
+        analysis_with_disclaimer = f"{analysis} {disclaimer}"
+        
+        # Generate possible causes based on symptoms
+        possible_causes = self._generate_possible_causes(symptoms)
+        
         return {
-            "analysis": f"Fallback Analysis: {analysis}",
+            "analysis": f"Fallback Analysis: {analysis_with_disclaimer}",
             "urgency_level": urgency_level,
-            "recommendations": recommendations
+            "recommendations": recommendations,
+            "possible_causes": possible_causes
         }
+
+    def _generate_possible_causes(self, symptoms: List[Dict]) -> List[str]:
+        """Generate possible causes based on symptoms"""
+        causes = []
+        symptom_names = [s.get('symptom_name', '').lower() for s in symptoms]
+        
+        # Map symptoms to possible causes
+        cause_mapping = {
+            'vomiting': ['dietary indiscretion', 'gastrointestinal upset', 'stress', 'food sensitivity'],
+            'diarrhea': ['dietary change', 'food intolerance', 'stress', 'gastrointestinal infection'],
+            'lethargy': ['mild illness', 'overexertion', 'weather changes', 'routine changes'],
+            'loss of appetite': ['stress', 'minor illness', 'food preferences', 'environmental changes'],
+            'not eating': ['stress', 'minor illness', 'food preferences', 'environmental changes'],
+            'coughing': ['mild respiratory irritation', 'environmental allergens', 'dry air'],
+            'sneezing': ['environmental allergens', 'dust', 'mild respiratory irritation']
+        }
+        
+        # Add causes based on symptoms
+        for symptom in symptom_names:
+            for key, possible_causes_list in cause_mapping.items():
+                if key in symptom:
+                    causes.extend(possible_causes_list)
+        
+        # Remove duplicates and return unique causes
+        unique_causes = list(set(causes))
+        
+        # If no specific causes found, provide general ones
+        if not unique_causes:
+            unique_causes = ['minor illness', 'environmental factors', 'stress', 'routine changes']
+        
+        return unique_causes[:4]  # Limit to 4 causes
