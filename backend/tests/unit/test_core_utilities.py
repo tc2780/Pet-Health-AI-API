@@ -3,7 +3,7 @@ Comprehensive unit tests for core utilities and security functions
 """
 import pytest
 from unittest.mock import patch, MagicMock
-import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
@@ -69,7 +69,7 @@ class TestSecurityFunctions:
             try:
                 payload = jwt.decode(token, secret_key, algorithms=[algorithm])
                 return payload
-            except jwt.PyJWTError:
+            except JWTError:
                 return None
         
         # Test token creation
@@ -102,10 +102,10 @@ class TestSecurityFunctions:
         past_timestamp = (datetime.utcnow() - timedelta(hours=1)).timestamp()
         assert mock_is_token_expired(past_timestamp)
         
-        # Test token expiring right now
-        now_timestamp = datetime.utcnow().timestamp()
-        is_expired = mock_is_token_expired(now_timestamp)
-        # Should be expired (time has passed during execution)
+        # Test token that just expired (1 second ago)
+        just_expired_timestamp = (datetime.utcnow() - timedelta(seconds=1)).timestamp()
+        is_expired = mock_is_token_expired(just_expired_timestamp)
+        # Should be expired
         assert is_expired
     
     def test_secure_random_generation(self):

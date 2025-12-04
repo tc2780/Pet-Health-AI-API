@@ -116,8 +116,11 @@ class TestAIPerformance:
             
     async def test_memory_usage_stability(self, symptom_service, sample_pet, sample_symptoms):
         """Test that memory usage remains stable during analysis"""
-        import psutil
-        import os
+        try:
+            import psutil
+            import os
+        except ImportError:
+            pytest.skip("psutil not installed - run 'pip install psutil' to enable memory tests")
         
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss

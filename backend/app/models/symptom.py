@@ -2,19 +2,18 @@
 Symptom models for tracking pet symptoms and AI assessments
 """
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, JSON
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 
-from app.core.database import Base
+from app.core.database import Base, uuid_column, uuid_foreign_key_column
 
 
 class Symptom(Base):
     __tablename__ = "symptoms"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
+    id = uuid_column()
+    pet_id = uuid_foreign_key_column("pets.id")
     symptom_name = Column(String(100), nullable=False)
     severity = Column(String(20), nullable=False)  # 'mild', 'moderate', 'severe'
     description = Column(Text)
@@ -32,8 +31,8 @@ class Symptom(Base):
 class SymptomAssessment(Base):
     __tablename__ = "symptom_assessments"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    pet_id = Column(UUID(as_uuid=True), ForeignKey("pets.id", ondelete="CASCADE"), nullable=False)
+    id = uuid_column()
+    pet_id = uuid_foreign_key_column("pets.id")
     symptoms_json = Column(JSON, nullable=False)  # Store symptom data as JSON
     ai_analysis = Column(Text)
     urgency_level = Column(String(20), nullable=False)  # 'low', 'medium', 'high', 'emergency'

@@ -26,37 +26,67 @@ This directory contains comprehensive unit tests for all API endpoints and funct
 
 ### Prerequisites
 ```bash
-# Install test dependencies
-pip install pytest pytest-asyncio httpx
+# Start the Docker containers
+docker compose up -d
 ```
 
 ### Basic Test Run
 ```bash
-# From the backend directory
-cd backend
-python run_tests.py
+# From the project root directory
+docker compose exec api python run_tests.py
 ```
 
 ### With Coverage Report
 ```bash
 # Generate HTML coverage report
-python run_tests.py --coverage
+docker compose exec api python run_tests.py --coverage
 ```
 
 ### Manual pytest Commands
 ```bash
-# Run all tests
-pytest tests/ -v
+# Run all tests (note: some integration tests may fail due to external dependencies)
+docker compose exec api pytest tests/ -v
+
+# Run specific test categories that work reliably
+docker compose exec api pytest tests/unit/ -v
+
+# Run AI tests (requires Ollama service to be running)
+docker compose exec api pytest tests/ai/ -v
 
 # Run specific test file
-pytest tests/test_auth.py -v
+docker compose exec api pytest tests/unit/test_core_utilities.py -v
 
 # Run specific test
-pytest tests/test_auth.py::TestAuthEndpoints::test_register_user_success -v
+docker compose exec api pytest tests/unit/test_core_utilities.py::TestSecurityFunctions::test_jwt_token_creation_and_validation -v
 
 # Run with coverage
-pytest tests/ --cov=app --cov-report=html
+docker compose exec api pytest tests/unit/ --cov=app --cov-report=html
+
+# Run integration tests
+docker compose exec api pytest tests/integration/ -v
 ```
+
+## AI Testing Setup
+
+The AI tests require the Ollama service and models to be properly set up:
+
+```bash
+# Start Ollama service
+docker compose up -d ollama
+
+# Install a small model for testing (1-2GB download)
+docker compose exec ollama ollama pull llama3.2:1b
+
+# Now run AI tests
+docker compose exec api pytest tests/ai/ -v
+```
+
+**AI Test Categories:**
+- **Ollama Integration**: Direct API connectivity and response parsing
+- **Performance**: Response time, concurrency, and memory usage benchmarks  
+- **Symptom Analysis**: End-to-end AI analysis functionality
+
+**Note**: AI tests may be skipped if Ollama is unavailable or models aren't installed.
 
 ## Test Database
 
@@ -83,6 +113,21 @@ async def test_create_pet(client, authenticated_user, sample_pet_data):
         headers=authenticated_user["headers"]
     )
     assert response.status_code == 200
+```
+
+## Running Tests in Docker
+
+All test commands should be run using the Docker container to ensure consistency with the production environment:
+
+```bash
+# Start containers first
+docker compose up -d
+
+# Run tests using the container
+docker compose exec api pytest tests/ -v
+
+# Check logs if needed
+docker compose logs api
 ```
 
 ## Test Categories
@@ -141,6 +186,29 @@ tests/test_health_and_general.py::TestHealthEndpoints::test_health_check PASSED
 ✅ All tests passed!
 ```
 
+## Docker Test Commands Reference
+
+```bash
+# Quick test runs
+docker compose exec api pytest tests/integration/ -v
+docker compose exec api pytest tests/unit/ -v
+docker compose exec api pytest tests/ai/ -v
+
+# Specific test categories
+docker compose exec api pytest tests/integration/test_pets.py -v
+docker compose exec api pytest tests/integration/test_auth.py -v
+docker compose exec api pytest tests/unit/test_auth_service.py -v
+docker compose exec api pytest tests/ai/test_performance.py -v
+
+# AI-specific tests (requires Ollama setup)
+docker compose exec api pytest tests/ai/test_ollama_integration.py -v
+docker compose exec api pytest tests/ai/test_symptom_analysis.py -v
+
+# Coverage and reporting
+docker compose exec api pytest tests/ --cov=app --cov-report=html --cov-report=term
+docker compose exec api pytest tests/ --tb=short -q
+```
+
 ## Writing New Tests
 
 ### Test Structure
@@ -171,13 +239,36 @@ class TestNewEndpoint:
 ## Troubleshooting
 
 ### Common Issues
-1. **Import Errors**: Install missing dependencies with `pip install -r requirements.txt`
-2. **Database Errors**: Tests use in-memory database, no external setup needed
-3. **Async Errors**: Ensure `pytest-asyncio` is installed and configured
-4. **Token Errors**: Use the `authenticated_user` fixture for protected endpoints
+1. **Container Not Running**: Start containers with `docker compose up -d`
+2. **Import Errors**: Dependencies are pre-installed in the Docker image
+3. **Database Errors**: Tests use in-memory database, no external setup needed
+4. **Async Errors**: `pytest-asyncio` is pre-configured in the container
+5. **Token Errors**: Use the `authenticated_user` fixture for protected endpoints
+6. **Permission Errors**: Ensure Docker has proper permissions
+
+### Docker-Specific Troubleshooting
+```bash
+# Check container status
+docker compose ps
+
+# View logs
+docker compose logs api
+docker compose logs ollama
+
+# Restart containers if needed
+docker compose restart
+
+# Rebuild if dependencies changed
+docker compose build api
+
+# Setup Ollama for AI tests
+docker compose up -d ollama
+docker compose exec ollama ollama pull llama3.2:1b
+```
 
 ### Getting Help
 - Check test output for specific error messages
-- Run individual test files to isolate issues
+- Run individual test files to isolate issues: `docker compose exec api pytest tests/test_auth.py -v`
 - Use `-v` flag for verbose output
 - Check `conftest.py` for fixture definitions
+- Ensure containers are running before executing tests

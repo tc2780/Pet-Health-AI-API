@@ -16,6 +16,7 @@ services:
       - VET_SYNC_MOCK=true
       - DEBUG=true
       - LOG_LEVEL=INFO
+      - DOCKER_ENV=true
     volumes:
       - ./backend:/app
       - /app/.local  # Preserve installed Python packages
