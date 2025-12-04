@@ -63,7 +63,7 @@ graph TB
     HEALTH --> PROMETHEUS
     PROMETHEUS --> GRAFANA
 ```
-(PNG version of the diagram can be found [here](diagrams/architecture_diagram.png))
+(PNG version of the diagram can be found [here](diagrams/architecture_diagram_system_overview.png))
 
 ## Component Details
 
