@@ -4,23 +4,33 @@ This directory contains comprehensive unit tests for all API endpoints and funct
 
 ## Test Organization
 
-### Test Files
-- **`conftest.py`** - Test configuration, fixtures, and setup
-- **`test_auth.py`** - Authentication endpoint tests
-- **`test_pets.py`** - Pet management endpoint tests  
-- **`test_users.py`** - User management endpoint tests
-- **`test_health_and_general.py`** - Health checks and general API tests
+### Test Structure
+```
+tests/
+├── conftest.py                    # Test configuration and fixtures
+├── test_clause_control_fixed.py  # Privacy & compliance validation tests
+├── unit/                          # Unit tests for services and core functionality  
+│   ├── test_auth_service.py      # Authentication service tests
+│   ├── test_core_utilities.py    # Core utility function tests
+│   ├── test_pet_service.py       # Pet service layer tests
+│   ├── test_symptom_service.py   # Symptom and AI analysis service tests
+│   └── test_user_service.py      # User service layer tests
+├── integration/                   # API integration tests
+│   ├── test_auth.py              # Authentication endpoints
+│   ├── test_health_and_general.py # Health checks and general API
+│   ├── test_pets.py              # Pet management endpoints
+│   └── test_users.py             # User management endpoints
+└── ai/                           # AI and ML integration tests
+    ├── test_ollama_integration.py # Direct Ollama API tests
+    ├── test_performance.py        # AI performance and benchmarks
+    └── test_symptom_analysis.py   # End-to-end AI symptom analysis
+```
 
-### Test Coverage
-- ✅ **Authentication Flow** - Registration, login, token validation
-- ✅ **Pet CRUD Operations** - Create, read, update, delete pets
-- ✅ **Vet Sync Integration** - Mock veterinary clinic data sync
-- ✅ **User Management** - User profile operations
-- ✅ **Authorization** - Access control and security
-- ✅ **Data Validation** - Input validation and error handling
-- ✅ **API Health** - Health checks and documentation
-- ✅ **Error Scenarios** - 400, 401, 404, 422 responses
-- ✅ **Concurrent Access** - Multi-user data isolation
+### Test Coverage (164 Total Tests)
+- ✅ **Unit Tests (103 tests)** - Service layer, core utilities, business logic
+- ✅ **Integration Tests (18 tests)** - API endpoints, database persistence
+- ✅ **AI Tests (19 tests)** - Ollama integration, symptom analysis, performance
+- ✅ **Compliance Tests (24 tests)** - Privacy controls, ethics validation, data export
 
 ## Running Tests
 
@@ -32,14 +42,26 @@ docker compose up -d
 
 ### Basic Test Run
 ```bash
-# From the project root directory
-docker compose exec api python run_tests.py
+# Run all tests (164 tests)
+docker compose exec api pytest tests/ -v
+
+# Quick comprehensive test
+docker compose exec api pytest tests/ --tb=short -q
+
+# Run by category
+docker compose exec api pytest tests/unit/ -v           # Service layer tests
+docker compose exec api pytest tests/integration/ -v    # API endpoint tests  
+docker compose exec api pytest tests/ai/ -v            # AI functionality tests
+docker compose exec api pytest tests/test_clause_control_fixed.py -v  # Compliance tests
 ```
 
 ### With Coverage Report
 ```bash
 # Generate HTML coverage report
-docker compose exec api python run_tests.py --coverage
+docker compose exec api pytest tests/unit/ --cov=app --cov-report=html
+
+# Coverage with terminal output
+docker compose exec api pytest tests/ --cov=app --cov-report=term-missing
 ```
 
 ### Manual pytest Commands
@@ -75,7 +97,7 @@ The AI tests require the Ollama service and models to be properly set up:
 docker compose up -d ollama
 
 # Install a small model for testing (1-2GB download)
-docker compose exec ollama ollama pull llama3.2:1b
+docker compose exec ollama ollama pull llama3.2:3b
 
 # Now run AI tests
 docker compose exec api pytest tests/ai/ -v
@@ -132,39 +154,56 @@ docker compose logs api
 
 ## Test Categories
 
-### 🔐 Authentication Tests (`test_auth.py`)
+### 🔐 Authentication Tests (`integration/test_auth.py`)
 - User registration validation
 - Login with JWT token generation
-- Password security
+- Password security and hashing
 - Duplicate email handling
 - Invalid credentials
 - Token-based authorization
+- Cross-session authentication
 
-### 🐕 Pet Management Tests (`test_pets.py`)
+### 🐕 Pet Management Tests (`integration/test_pets.py`)
 - Pet creation with full validation
-- Retrieving user's pets
+- Retrieving user's pets with data relationships
 - Pet details with symptoms/assessments
 - Pet updates and modifications
-- Pet deletion and cleanup
+- Pet deletion and cascade cleanup
 - **Vet clinic sync integration** - Single pet and bulk sync operations
-- **Sync authorization** - Ownership validation and access control
 - Multi-user data isolation
-- Authorization and ownership
+- Authorization and ownership validation
 
-### 👤 User Tests (`test_users.py`)
+### 👤 User Tests (`integration/test_users.py`)
 - User profile retrieval
 - User information updates
-- Account deletion
+- Account deletion with cascade effects
+- **Data export functionality** - GDPR-compliant complete data export
 - Data integrity and isolation
-- Cascade deletion of user data
+- Username/email uniqueness validation
 
-### 🏥 Health & General Tests (`test_health_and_general.py`)
+### 🩺 Symptom & AI Analysis Tests (`unit/test_symptom_service.py`, `ai/test_symptom_analysis.py`)
+- Symptom recording and tracking
+- **AI-powered symptom analysis** with Ollama integration
+- Urgency level assessment (emergency/high/moderate/low)
+- **Fallback analysis** when AI unavailable
+- Response parsing and validation
+- Context-aware recommendations
+- Medical disclaimer inclusion
+
+### 🏥 Health & General Tests (`integration/test_health_and_general.py`)
 - API health endpoints
 - OpenAPI documentation
 - Error handling (404, 405, 422)
 - CORS and compression
 - Concurrent request handling
-- Large request processing
+
+### 🛡️ Privacy & Compliance Tests (`test_clause_control_fixed.py`)
+- **Data minimization** - No excessive data collection
+- **User control** - Data modification and deletion rights
+- **Privacy controls** - No third-party data sharing
+- **AI ethics** - Conservative medical advice, disclaimers
+- **Data portability** - Complete user data export
+- **Red bar compliance** - Critical security and privacy controls
 
 ## Sample Test Output
 
@@ -172,18 +211,21 @@ docker compose logs api
 🧪 Running Pet Health API Unit Tests
 ==================================================
 
-tests/test_auth.py::TestAuthEndpoints::test_register_user_success PASSED
-tests/test_auth.py::TestAuthEndpoints::test_register_user_duplicate_email PASSED
-tests/test_auth.py::TestAuthEndpoints::test_login_success PASSED
-tests/test_pets.py::TestPetEndpoints::test_create_pet_success PASSED
-tests/test_pets.py::TestPetEndpoints::test_get_user_pets_success PASSED
-tests/test_users.py::TestUserEndpoints::test_get_current_user PASSED
-tests/test_health_and_general.py::TestHealthEndpoints::test_health_check PASSED
+tests/unit/test_auth_service.py::TestAuthService::test_get_current_user_success PASSED
+tests/unit/test_pet_service.py::TestPetServiceQueries::test_get_pet_by_id_found PASSED  
+tests/unit/test_symptom_service.py::TestSymptomServicePrivateMethods::test_parse_ai_response_valid_json PASSED
+tests/integration/test_auth.py::TestAuthAPIIntegration::test_register_login_flow_integration PASSED
+tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_crud_database_persistence PASSED
+tests/integration/test_users.py::TestUserAPIIntegration::test_user_update_database_persistence PASSED
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_ollama_api_connectivity PASSED
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_ai_analysis_success PASSED
+tests/test_clause_control_fixed.py::test_complete_data_export PASSED
+tests/test_clause_control_fixed.py::TestRedBarCompliance::test_no_external_ai_calls_RED_BAR PASSED
 
-========== 25 passed in 3.45s ==========
+========== 161 passed, 3 skipped in 52.74s ==========
 
 ==================================================
-✅ All tests passed!
+✅ 98.2% test success rate! (161/164 passed, 3 skipped)
 ```
 
 ## Docker Test Commands Reference
@@ -263,7 +305,7 @@ docker compose build api
 
 # Setup Ollama for AI tests
 docker compose up -d ollama
-docker compose exec ollama ollama pull llama3.2:1b
+docker compose exec ollama ollama pull llama3.2:3b
 ```
 
 ### Getting Help

@@ -1,40 +1,18 @@
 # Pet Health API - OpenAPI Specification
 
 ## Overview
-RESTful API for pet health management with AI-powered symptom analysis.
+RESTful API for pet health management with AI-powered symptom analysis using local Ollama LLM processing.
 
-**Base URL**: `https://api.pethealth.com/v1`
-**Authentication**: Bearer JWT tokens
+**Base URL**: `http://localhost:8000/api/v1` (development)  
+**Authentication**: Bearer JWT tokens  
+**OpenAPI Docs**: `http://localhost:8000/docs`  
+**Current Version**: 1.0.0
 
-## Authentication
+## Authentication Endpoints
 
 ### Register User
 ```yaml
-POST /auth/register
-Content-Type: application/json
-
-Request:
-{
-  "email": "user@example.com",
-  "password": "securePassword123",
-  "first_name": "John",
-  "last_name": "Doe"
-}
-
-Response (201):
-{
-  "user_id": "123e4567-e89b-12d3-a456-426614174000",
-  "email": "user@example.com",
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600
-}
-```
-
-### Login
-```yaml
-POST /auth/login
+POST /api/v1/auth/register
 Content-Type: application/json
 
 Request:
@@ -45,18 +23,135 @@ Request:
 
 Response (200):
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "username": null,
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T10:30:00Z"
 }
 ```
 
-## Pet Management
+### Login
+```yaml
+POST /api/v1/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+Request:
+username=user@example.com&password=securePassword123
+
+Response (200):
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer"
+}
+```
+
+### Get Current User
+```yaml
+GET /api/v1/auth/me
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "username": "petlover123",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T10:30:00Z"
+}
+```
+
+## User Management Endpoints
+
+### Get User Profile
+```yaml
+GET /api/v1/users/me
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "user@example.com",
+  "username": "petlover123",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T10:30:00Z"
+}
+```
+
+### Update User Profile
+```yaml
+PUT /api/v1/users/me
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+Request:
+{
+  "username": "newusername",
+  "email": "newemail@example.com",
+  "password": "newPassword123"  // optional
+}
+
+Response (200):
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "email": "newemail@example.com",
+  "username": "newusername",
+  "is_active": true,
+  "is_verified": false,
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T11:00:00Z"
+}
+```
+
+### Delete User Account
+```yaml
+DELETE /api/v1/users/me
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "message": "User account successfully deleted"
+}
+```
+
+### Export User Data (GDPR Compliance)
+```yaml
+GET /api/v1/users/me/export
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "export_timestamp": "2025-12-04T11:00:00Z",
+  "user_profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "user@example.com",
+    "username": "petlover123",
+    "created_at": "2025-12-04T10:30:00Z",
+    "is_active": true,
+    "is_verified": false
+  },
+  "pets": [...],
+  "symptoms": [...],
+  "assessments": [...],
+  "data_summary": {
+    "total_pets": 2,
+    "total_symptoms": 5,
+    "total_assessments": 3
+  }
+}
+```
+
+## Pet Management Endpoints
 
 ### Create Pet
 ```yaml
-POST /pets
+POST /api/v1/pets/
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
@@ -71,9 +166,10 @@ Request:
   "neutered": true
 }
 
-Response (201):
+Response (200):
 {
   "id": "456e7890-e89b-12d3-a456-426614174001",
+  "user_id": "123e4567-e89b-12d3-a456-426614174000",
   "name": "Buddy",
   "species": "dog",
   "breed": "Golden Retriever",
@@ -81,34 +177,37 @@ Response (201):
   "weight_kg": 30.5,
   "sex": "male",
   "neutered": true,
-  "created_at": "2025-11-30T10:30:00Z"
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T10:30:00Z"
 }
 ```
 
 ### Get User's Pets
 ```yaml
-GET /pets
+GET /api/v1/pets/
 Authorization: Bearer {access_token}
 
 Response (200):
-{
-  "pets": [
-    {
-      "id": "456e7890-e89b-12d3-a456-426614174001",
-      "name": "Buddy",
-      "species": "dog",
-      "breed": "Golden Retriever",
-      "age_years": 5,
-      "created_at": "2025-11-30T10:30:00Z"
-    }
-  ],
-  "total": 1
-}
+[
+  {
+    "id": "456e7890-e89b-12d3-a456-426614174001",
+    "user_id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Buddy",
+    "species": "dog",
+    "breed": "Golden Retriever",
+    "age_years": 5,
+    "weight_kg": 30.5,
+    "sex": "male",
+    "neutered": true,
+    "created_at": "2025-12-04T10:30:00Z",
+    "updated_at": "2025-12-04T10:30:00Z"
+  }
+]
 ```
 
 ### Get Pet Details
 ```yaml
-GET /pets/{pet_id}
+GET /api/v1/pets/{pet_id}
 Authorization: Bearer {access_token}
 
 Response (200):
@@ -121,301 +220,466 @@ Response (200):
   "weight_kg": 30.5,
   "sex": "male",
   "neutered": true,
-  "created_at": "2025-11-30T10:30:00Z",
-  "recent_symptoms_count": 3
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T10:30:00Z",
+  "symptoms": [...],
+  "assessments": [...]
 }
 ```
 
-## Symptom Tracking
-
-### Log Symptom
+### Update Pet
 ```yaml
-POST /symptoms/{pet_id}/symptoms
+PUT /api/v1/pets/{pet_id}
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 Request:
 {
+  "weight_kg": 32.0,
+  "age_years": 6
+}
+
+Response (200):
+{
+  "id": "456e7890-e89b-12d3-a456-426614174001",
+  "name": "Buddy",
+  "species": "dog",
+  "breed": "Golden Retriever",
+  "age_years": 6,
+  "weight_kg": 32.0,
+  "sex": "male",
+  "neutered": true,
+  "created_at": "2025-12-04T10:30:00Z",
+  "updated_at": "2025-12-04T11:00:00Z"
+}
+```
+
+### Delete Pet
+```yaml
+DELETE /api/v1/pets/{pet_id}
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "message": "Pet deleted successfully"
+}
+```
+
+## Veterinary Sync Endpoints (Mock)
+
+### Sync Single Pet
+```yaml
+POST /api/v1/pets/{pet_id}/sync
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+Request:
+{
+  "vet_clinic_id": "clinic_001",
+  "include_assessments": true
+}
+
+Response (200):
+{
+  "success": true,
+  "clinic_id": "mock-clinic-001",
+  "synced_at": "2025-12-04T11:00:00Z",
+  "payload_summary": {
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "name": "Buddy",
+    "species": "dog",
+    "age_years": 5,
+    "symptoms_count": 2
+  }
+}
+```
+
+### Sync All User Pets
+```yaml
+POST /api/v1/pets/sync-all
+Authorization: Bearer {access_token}
+
+Response (200):
+[
+  {
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "synced": true,
+    "synced_at": "2025-12-04T11:00:00Z"
+  }
+]
+```
+
+## Symptom Management Endpoints
+
+### Create Symptom
+```yaml
+POST /api/v1/symptoms/
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+Request:
+{
+  "pet_id": "456e7890-e89b-12d3-a456-426614174001",
   "symptom_name": "lethargy",
   "severity": "moderate",
   "description": "Pet seems unusually tired and less active than normal",
-  "observed_at": "2025-11-30T14:30:00Z",
+  "observed_at": "2025-12-04T14:30:00Z",
   "duration_hours": 6
 }
 
-Response (201):
+Response (200):
 {
   "id": "789e0123-e89b-12d3-a456-426614174002",
   "pet_id": "456e7890-e89b-12d3-a456-426614174001",
   "symptom_name": "lethargy",
   "severity": "moderate",
   "description": "Pet seems unusually tired and less active than normal",
-  "observed_at": "2025-11-30T14:30:00Z",
+  "observed_at": "2025-12-04T14:30:00Z",
   "duration_hours": 6,
-  "created_at": "2025-11-30T15:00:00Z"
+  "created_at": "2025-12-04T14:30:00Z"
 }
 ```
 
-### Get Symptoms by Time Frame
+### Get Pet Symptoms
 ```yaml
-GET /symptoms/{pet_id}/symptoms?days_back=7
+GET /api/v1/symptoms/pet/{pet_id}
 Authorization: Bearer {access_token}
 
-Query Parameters:
-- days_back: integer (optional, default: 30) - Number of days to look back
-- start_date: ISO 8601 date (optional) - Start of date range
-- end_date: ISO 8601 date (optional) - End of date range
-
 Response (200):
-{
-  "symptoms": [
-    {
-      "id": "789e0123-e89b-12d3-a456-426614174002",
-      "symptom_name": "lethargy",
-      "severity": "moderate",
-      "description": "Pet seems unusually tired",
-      "observed_at": "2025-11-30T14:30:00Z",
-      "duration_hours": 6,
-      "created_at": "2025-11-30T15:00:00Z"
-    }
-  ],
-  "total": 1,
-  "date_range": {
-    "start": "2025-11-30T00:00:00Z",
-    "end": "2025-11-30T23:59:59Z"
+[
+  {
+    "id": "789e0123-e89b-12d3-a456-426614174002",
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "symptom_name": "lethargy",
+    "severity": "moderate",
+    "description": "Pet seems unusually tired and less active than normal",
+    "observed_at": "2025-12-04T14:30:00Z",
+    "duration_hours": 6,
+    "created_at": "2025-12-04T14:30:00Z"
   }
-}
+]
 ```
 
-### Get Full Symptom History
+### Get All User Pet Symptoms
 ```yaml
-GET /symptoms/{pet_id}/symptoms/history
+GET /api/v1/symptoms/my-pets
 Authorization: Bearer {access_token}
 
 Response (200):
-{
-  "symptoms": [
-    {
-      "id": "789e0123-e89b-12d3-a456-426614174002",
-      "symptom_name": "lethargy",
-      "severity": "moderate",
-      "observed_at": "2025-11-30T14:30:00Z",
-      "duration_hours": 6
-    }
-  ],
-  "total": 1,
-  "oldest_symptom": "2025-11-30T10:00:00Z",
-  "newest_symptom": "2025-11-30T14:30:00Z"
-}
+[
+  {
+    "id": "789e0123-e89b-12d3-a456-426614174002",
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "symptom_name": "lethargy",
+    "severity": "moderate",
+    "description": "Pet seems unusually tired and less active than normal",
+    "observed_at": "2025-12-04T14:30:00Z",
+    "duration_hours": 6,
+    "created_at": "2025-12-04T14:30:00Z"
+  }
+]
 ```
 
-## AI Veterinary Assessment
-
-### Request AI Assessment
+### Update Symptom
 ```yaml
-POST /ai-vet/{pet_id}/assess
+PUT /api/v1/symptoms/{symptom_id}
 Authorization: Bearer {access_token}
 Content-Type: application/json
 
 Request:
 {
-  "include_recent_symptoms": true,
-  "additional_context": "Pet ate new food yesterday",
-  "current_symptoms": [
+  "severity": "severe",
+  "description": "Pet is now completely inactive"
+}
+
+Response (200):
+{
+  "id": "789e0123-e89b-12d3-a456-426614174002",
+  "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+  "symptom_name": "lethargy",
+  "severity": "severe",
+  "description": "Pet is now completely inactive",
+  "observed_at": "2025-12-04T14:30:00Z",
+  "duration_hours": 6,
+  "created_at": "2025-12-04T14:30:00Z"
+}
+```
+
+### Delete Symptom
+```yaml
+DELETE /api/v1/symptoms/{symptom_id}
+Authorization: Bearer {access_token}
+
+Response (200):
+{
+  "message": "Symptom deleted successfully"
+}
+```
+
+## AI-Powered Symptom Assessment Endpoints
+
+### Create AI Assessment
+```yaml
+POST /api/v1/symptoms/assess
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+Request:
+{
+  "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+  "symptoms": [
     {
-      "symptom_name": "vomiting",
+      "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+      "symptom_name": "lethargy",
+      "severity": "moderate",
+      "description": "Pet seems unusually tired",
+      "observed_at": "2025-12-04T14:30:00Z",
+      "duration_hours": 6
+    },
+    {
+      "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+      "symptom_name": "loss of appetite",
       "severity": "mild",
-      "description": "Vomited twice this morning",
-      "observed_at": "2025-11-30T08:00:00Z",
-      "duration_hours": 2
+      "description": "Eating less than usual",
+      "observed_at": "2025-12-04T14:00:00Z",
+      "duration_hours": 12
     }
   ]
 }
 
 Response (200):
 {
-  "assessment_id": "abc12345-e89b-12d3-a456-426614174003",
+  "id": "abc0123-e89b-12d3-a456-426614174003",
   "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+  "symptoms_json": [...],
   "urgency_level": "moderate",
-  "possible_causes": [
-    "Dietary indiscretion (eating new or inappropriate food)",
-    "Gastric upset from stress or environmental changes",
-    "Mild food allergy or sensitivity",
-    "Early stages of viral gastroenteritis"
-  ],
-  "recommendations": [
-    "Withhold food for 12-24 hours but ensure water access",
-    "Monitor for additional symptoms like diarrhea or lethargy",
-    "Gradually reintroduce bland diet (rice and boiled chicken)",
-    "Keep pet comfortable and watch for dehydration signs"
-  ],
-  "when_to_see_vet": "If vomiting continues beyond 24 hours, if pet becomes lethargic, refuses water, or shows signs of dehydration",
-  "monitoring_instructions": [
-    "Track frequency and volume of vomiting episodes",
-    "Monitor water intake and urination patterns",
-    "Check gum color and skin elasticity for dehydration",
-    "Note any changes in behavior or energy levels"
-  ],
-  "created_at": "2025-11-30T16:00:00Z",
-  "disclaimer": "This AI assessment is for educational purposes only. Always consult a licensed veterinarian for medical concerns."
+  "analysis": "Based on the symptoms of lethargy and loss of appetite, your Golden Retriever may be experiencing a mild illness or stress. These symptoms can indicate various conditions ranging from minor digestive upset to more serious health issues.",
+  "recommendations": "Monitor your pet closely for the next 24-48 hours. Ensure they have access to fresh water. If symptoms worsen or persist beyond 48 hours, consult with your veterinarian. Watch for additional symptoms like vomiting, diarrhea, or unusual behavior.",
+  "possible_causes": ["dietary indiscretion", "stress", "minor viral infection", "change in routine"],
+  "ai_provider": "ollama",
+  "processing_time_ms": 2450,
+  "created_at": "2025-12-04T15:00:00Z"
 }
 ```
 
-### Get Assessment History
+### Get Pet Assessments
 ```yaml
-GET /ai-vet/{pet_id}/assessments
+GET /api/v1/symptoms/assessments/pet/{pet_id}
 Authorization: Bearer {access_token}
 
-Query Parameters:
-- limit: integer (optional, default: 10) - Number of assessments to return
-- offset: integer (optional, default: 0) - Pagination offset
+Response (200):
+[
+  {
+    "id": "abc0123-e89b-12d3-a456-426614174003",
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "urgency_level": "moderate",
+    "analysis": "Based on the symptoms...",
+    "recommendations": "Monitor your pet closely...",
+    "possible_causes": ["dietary indiscretion", "stress"],
+    "ai_provider": "ollama",
+    "created_at": "2025-12-04T15:00:00Z"
+  }
+]
+```
+
+### Get All User Pet Assessments
+```yaml
+GET /api/v1/symptoms/assessments/my-pets
+Authorization: Bearer {access_token}
 
 Response (200):
-{
-  "assessments": [
-    {
-      "assessment_id": "abc12345-e89b-12d3-a456-426614174003",
-      "urgency_level": "moderate",
-      "symptoms_analyzed": ["vomiting", "lethargy"],
-      "created_at": "2025-11-30T16:00:00Z"
-    }
-  ],
-  "total": 1,
-  "has_more": false
-}
+[
+  {
+    "id": "abc0123-e89b-12d3-a456-426614174003",
+    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+    "urgency_level": "moderate",
+    "analysis": "Based on the symptoms...",
+    "recommendations": "Monitor your pet closely...",
+    "possible_causes": ["dietary indiscretion", "stress"],
+    "ai_provider": "ollama",
+    "created_at": "2025-12-04T15:00:00Z"
+  }
+]
 ```
 
 ### Get Specific Assessment
 ```yaml
-GET /ai-vet/assessments/{assessment_id}
+GET /api/v1/symptoms/assessments/{assessment_id}
 Authorization: Bearer {access_token}
 
 Response (200):
 {
-  "assessment_id": "abc12345-e89b-12d3-a456-426614174003",
+  "id": "abc0123-e89b-12d3-a456-426614174003",
   "pet_id": "456e7890-e89b-12d3-a456-426614174001",
+  "symptoms_json": [...],
   "urgency_level": "moderate",
-  "possible_causes": [...],
-  "recommendations": [...],
-  "when_to_see_vet": "...",
-  "monitoring_instructions": [...],
-  "symptoms_analyzed": [
-    {
-      "symptom_name": "vomiting",
-      "severity": "mild",
-      "observed_at": "2025-11-30T08:00:00Z"
-    }
-  ],
-  "created_at": "2025-11-30T16:00:00Z"
+  "analysis": "Based on the symptoms of lethargy and loss of appetite...",
+  "recommendations": "Monitor your pet closely for the next 24-48 hours...",
+  "possible_causes": ["dietary indiscretion", "stress", "minor viral infection"],
+  "ai_provider": "ollama",
+  "processing_time_ms": 2450,
+  "created_at": "2025-12-04T15:00:00Z"
 }
 ```
 
-## System Endpoints
+## Health & Utility Endpoints
+
+### Root Endpoint
+```yaml
+GET /
+Response (200):
+{
+  "message": "Pet Health API v1.0.0",
+  "docs": "/docs",
+  "health": "/health"
+}
+```
 
 ### Health Check
 ```yaml
 GET /health
-
 Response (200):
 {
   "status": "healthy",
-  "services": {
-    "database": "healthy",
-    "redis": "healthy",
-    "ai_service": "healthy"
-  },
-  "timestamp": "2025-11-30T16:30:00Z",
+  "timestamp": "2025-12-04T15:00:00Z",
   "version": "1.0.0"
 }
 ```
 
-### API Metrics
-```yaml
-GET /metrics
-Authorization: Bearer {access_token}
+## Data Models
 
-Response (200):
-# Prometheus format metrics
-pet_health_api_requests_total{method="GET",endpoint="/pets",status="200"} 1245
-pet_health_api_response_time_seconds{endpoint="/ai-vet/{pet_id}/assess"} 2.3
-pet_health_ai_assessments_total{urgency="moderate"} 234
-```
-
-## Error Responses
-
-### Standard Error Format
-```yaml
+### User Model
+```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input data",
-    "details": [
-      {
-        "field": "severity",
-        "message": "Must be one of: mild, moderate, severe"
-      }
-    ],
-    "timestamp": "2025-11-30T16:45:00Z",
-    "request_id": "req_123456789"
-  }
+  "id": "uuid-string",
+  "email": "string",
+  "username": "string | null",
+  "is_active": "boolean",
+  "is_verified": "boolean", 
+  "created_at": "datetime",
+  "updated_at": "datetime"
 }
 ```
 
-### Common Error Codes
-```yaml
-Error Codes:
-  400: BAD_REQUEST - Invalid request format or parameters
-  401: UNAUTHORIZED - Missing or invalid authentication
-  403: FORBIDDEN - Access denied to resource
-  404: NOT_FOUND - Resource not found
-  422: VALIDATION_ERROR - Request validation failed
-  429: RATE_LIMIT_EXCEEDED - Too many requests
-  500: INTERNAL_ERROR - Server error
-  503: SERVICE_UNAVAILABLE - AI service temporarily unavailable
+### Pet Model
+```json
+{
+  "id": "uuid-string",
+  "user_id": "uuid-string",
+  "name": "string",
+  "species": "string",
+  "breed": "string | null",
+  "age_years": "integer | null",
+  "weight_kg": "decimal | null", 
+  "sex": "string | null",
+  "neutered": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime"
+}
+```
+
+### Symptom Model
+```json
+{
+  "id": "uuid-string",
+  "pet_id": "uuid-string",
+  "symptom_name": "string",
+  "severity": "mild | moderate | severe",
+  "description": "string | null",
+  "observed_at": "datetime",
+  "duration_hours": "integer | null",
+  "created_at": "datetime"
+}
+```
+
+### Assessment Model
+```json
+{
+  "id": "uuid-string",
+  "pet_id": "uuid-string",
+  "symptoms_json": "object",
+  "urgency_level": "emergency | high | moderate | low",
+  "analysis": "string",
+  "recommendations": "string",
+  "possible_causes": "array[string] | null",
+  "ai_provider": "string | null",
+  "processing_time_ms": "integer | null",
+  "created_at": "datetime"
+}
+```
+
+## AI Processing Features
+
+### Urgency Levels
+- **`emergency`**: Life-threatening symptoms requiring immediate veterinary attention
+- **`high`**: Serious symptoms requiring veterinary consultation within 24 hours  
+- **`moderate`**: Concerning symptoms that should be monitored closely, veterinary consultation recommended
+- **`low`**: Mild symptoms that can be monitored at home with routine veterinary care
+
+### AI Provider Integration
+- **Local Processing**: Ollama with Llama 3.2:3b model for privacy-first analysis
+- **Fallback Handling**: Graceful degradation when AI service unavailable
+- **Response Structure**: Standardized JSON format with medical disclaimers
+- **Conservative Approach**: Always errs on the side of caution with veterinary referrals
+
+### Medical Ethics & Disclaimers
+All AI responses include appropriate medical disclaimers and emphasize the importance of professional veterinary care for accurate diagnosis and treatment.
+
+## Error Responses
+
+### Authentication Errors
+```json
+// 401 Unauthorized
+{
+  "detail": "Could not validate credentials"
+}
+
+// 403 Forbidden  
+{
+  "detail": "Not enough permissions"
+}
+```
+
+### Validation Errors
+```json
+// 422 Unprocessable Entity
+{
+  "detail": [
+    {
+      "type": "string_too_short",
+      "loc": ["body", "email"],
+      "msg": "String should have at least 1 character",
+      "input": ""
+    }
+  ]
+}
+```
+
+### Resource Errors
+```json
+// 404 Not Found
+{
+  "detail": "Pet not found"
+}
+
+// 400 Bad Request
+{
+  "detail": "Invalid request parameters"
+}
 ```
 
 ## Rate Limiting
+- **Default**: 100 requests per minute per user
+- **AI Endpoints**: 10 assessments per minute per user  
+- **Headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
 
-```yaml
-Rate Limits:
-  - Authentication endpoints: 5 requests/minute per IP
-  - Pet management: 60 requests/minute per user
-  - Symptom tracking: 30 requests/minute per user
-  - AI assessments: 10 requests/minute per user
-  
-Headers:
-  X-RateLimit-Limit: Maximum requests per window
-  X-RateLimit-Remaining: Requests remaining in current window
-  X-RateLimit-Reset: Unix timestamp when limit resets
-```
+## CORS Policy
+- **Allowed Origins**: Configurable for development/production
+- **Allowed Methods**: GET, POST, PUT, DELETE, OPTIONS
+- **Allowed Headers**: Authorization, Content-Type, Accept
 
-## Data Models
+---
 
-### Pet Schema
-```yaml
-Pet:
-  id: string (UUID)
-  name: string (max: 100)
-  species: string (enum: dog, cat, rabbit, bird, other)
-  breed: string (optional, max: 100)
-  age_years: integer (optional, min: 0, max: 30)
-  weight_kg: number (optional, min: 0.1, max: 200)
-  sex: string (optional, enum: male, female, unknown)
-  neutered: boolean (default: false)
-  created_at: datetime
-```
-
-### Symptom Schema
-```yaml
-Symptom:
-  id: string (UUID)
-  pet_id: string (UUID, foreign key)
-  symptom_name: string (max: 100)
-  severity: string (enum: mild, moderate, severe)
-  description: string (optional, max: 1000)
-  observed_at: datetime
-  duration_hours: integer (optional, min: 0)
-  created_at: datetime
-```
-
-This API specification provides a complete interface for pet health management with AI-powered veterinary guidance.
+**Last Updated**: December 4, 2025  
+**API Version**: 1.0.0  
+**OpenAPI Spec**: Available at `/docs` endpoint

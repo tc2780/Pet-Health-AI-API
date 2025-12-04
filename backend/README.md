@@ -33,7 +33,7 @@ open http://localhost:8000/docs
 4. **Set up AI model (first time only)**:
 ```bash
 # Pull the Llama model for local AI processing
-docker compose exec ollama ollama pull llama3.1:latest
+docker compose exec ollama ollama pull llama3.2:3b
 ```
 
 ## 📊 **Services Overview**
@@ -62,6 +62,7 @@ docker compose exec ollama ollama pull llama3.1:latest
 | `GET` | `/api/v1/users/me` | Get current user profile | ✅ |
 | `PUT` | `/api/v1/users/me` | Update user profile (email, username, password) | ✅ |
 | `DELETE` | `/api/v1/users/me` | Delete user account and all data | ✅ |
+| `GET` | `/api/v1/users/me/export` | Export all user data (GDPR compliance) | ✅ |
 
 ### 🐕 **Pet Management Endpoints**
 | Method | Endpoint | Description | Auth Required |
@@ -123,6 +124,10 @@ curl -X PUT "http://localhost:8000/api/v1/users/me" \
      -H "Authorization: Bearer YOUR_TOKEN_HERE" \
      -H "Content-Type: application/json" \
      -d '{"username": "petlover", "email": "newemail@example.com"}'
+
+# Export all user data (GDPR compliance)
+curl -X GET "http://localhost:8000/api/v1/users/me/export" \
+     -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
 ### 2. **Pet Management**
@@ -235,8 +240,8 @@ curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
   "breed": "Golden Retriever",
   "age_years": 3,
   "weight_kg": 25.5,
-  "microchip_id": "optional-chip-id",
-  "medical_notes": "No known allergies",
+  "sex": "male",
+  "neutered": true,
   "created_at": "2025-11-30T12:00:00Z",
   "updated_at": "2025-11-30T12:00:00Z"
 }
@@ -277,9 +282,10 @@ curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
   "pet_id": "pet-uuid", 
   "symptoms_json": [...],
   "ai_analysis": "Based on the analysis of 2 reported symptoms: lethargy, loss of appetite. These symptoms suggest a condition that should be monitored and may require veterinary consultation.",
-  "urgency_level": "medium",
+  "urgency_level": "moderate",
   "recommendations": "Monitor symptoms for 24-48 hours; Schedule routine veterinary appointment if symptoms persist; Ensure pet is comfortable and well-hydrated",
-  "ai_provider": "mock_ai_v1",
+  "possible_causes": ["dietary indiscretion", "stress", "minor illness"],
+  "ai_provider": "ollama",
   "processing_time_ms": 145,
   "created_at": "2025-11-30T09:00:00Z"
 }
@@ -288,7 +294,7 @@ curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
 ### **Urgency Levels**
 - **`emergency`**: Immediate veterinary attention required
 - **`high`**: Veterinary consultation within 24 hours
-- **`medium`**: Monitor closely, vet consultation recommended
+- **`moderate`**: Monitor closely, vet consultation recommended
 - **`low`**: Continue monitoring, routine care sufficient
 
 ## �🔧 **Development**
@@ -340,10 +346,11 @@ alembic upgrade head
 
 The API uses local AI processing for privacy-first veterinary guidance:
 
-- **Local LLM**: Ollama with Llama 3.1 for symptom analysis
+- **Local LLM**: Ollama with Llama 3.2:3b for symptom analysis
 - **Privacy-First**: All AI processing happens locally
 - **Conservative Approach**: Provides cautious recommendations with disclaimers
-- **Fallback Support**: Optional OpenAI integration for enhanced features
+- **Fallback Support**: Graceful degradation when AI service unavailable
+- **Data Export**: Full GDPR-compliant user data export functionality
 
 ## 🐳 **Docker Commands**
 
@@ -378,7 +385,7 @@ docker compose down -v
    ```bash
    docker compose logs ollama
    # Pull the model if not already downloaded
-   docker compose exec ollama ollama pull llama3.1:latest
+   docker compose exec ollama ollama pull llama3.2:3b
    ```
 
 3. **Port Conflicts**:
@@ -398,9 +405,9 @@ SECRET_KEY=your-secure-secret-key
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 # AI Configuration
-AI_PROVIDER=ollama  # or "openai"
+AI_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:latest
+OLLAMA_MODEL=llama3.2:3b
 
 # Features
 DEBUG=true

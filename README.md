@@ -17,7 +17,7 @@
 
 2. **Download the AI model** (first time only):
    ```bash
-   docker compose exec ollama ollama pull llama3.1:latest
+   docker compose exec ollama ollama pull llama3.2:3b
    ```
 
 3. **Verify everything is running**:
@@ -87,6 +87,35 @@ docker compose down
 - **Ollama AI Service**: localhost:11434
 - **Prometheus Monitoring**: http://localhost:9090
 - **Grafana Dashboard**: http://localhost:3000
+
+## Key Features & API Endpoints
+
+### Authentication & User Management
+- **User Registration**: `POST /api/v1/auth/register`
+- **User Login**: `POST /api/v1/auth/login`
+- **Get Profile**: `GET /api/v1/auth/me`
+- **Update Profile**: `PUT /api/v1/users/me`
+- **Delete Account**: `DELETE /api/v1/users/me`
+- **Export Data**: `GET /api/v1/users/me/export` (GDPR compliance)
+
+### Pet Management
+- **Create Pet**: `POST /api/v1/pets/`
+- **List User's Pets**: `GET /api/v1/pets/`
+- **Get Pet Details**: `GET /api/v1/pets/{pet_id}`
+- **Update Pet**: `PUT /api/v1/pets/{pet_id}`
+- **Delete Pet**: `DELETE /api/v1/pets/{pet_id}`
+
+### AI-Powered Symptom Analysis
+- **Record Symptoms**: `POST /api/v1/symptoms/`
+- **Get Pet Symptoms**: `GET /api/v1/symptoms/pet/{pet_id}`
+- **Get User's Pet Symptoms**: `GET /api/v1/symptoms/my-pets`
+- **AI Symptom Assessment**: `POST /api/v1/symptoms/assess` (with Ollama LLM)
+- **Get Assessments**: `GET /api/v1/symptoms/assessments/pet/{pet_id}`
+- **Get All User Assessments**: `GET /api/v1/symptoms/assessments/my-pets`
+
+### Veterinary Integration (Mock)
+- **Sync Single Pet**: `POST /api/v1/pets/{id}/sync`
+- **Sync All Pets**: `POST /api/v1/pets/sync-all`
 
 ## Vet Clinic Sync
 
