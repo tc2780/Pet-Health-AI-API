@@ -118,7 +118,7 @@ class SymptomService:
             urgency_level=ai_analysis_result["urgency_level"],
             recommendations=ai_analysis_result["recommendations"],
             possible_causes=ai_analysis_result.get("possible_causes", []),
-            ai_provider="ollama_llama3.2:3b" if "Fallback" not in ai_analysis_result["analysis"] else "fallback_rules",
+            ai_provider=f"ollama_{settings.ollama_model}" if "Fallback" not in ai_analysis_result["analysis"] else "fallback_rules",
             processing_time_ms=processing_time
         )
         
@@ -323,7 +323,7 @@ Respond only with the JSON object, no other text."""
         ollama_url = "http://localhost:11434/api/generate"
         
         payload = {
-            "model": "llama3.2:3b",  # Using smaller model for faster response
+            "model": settings.ollama_model,  # Configurable: llama3.2:1b or llama3.2:3b
             "prompt": prompt,
             "stream": False,
             "options": {

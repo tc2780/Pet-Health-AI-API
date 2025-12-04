@@ -206,7 +206,7 @@ export default function Index() {
             Endpoint Demo
           </h1>
           <p className="text-lg text-slate-600 max-w-2xl">
-            Test and demo your API endpoints. Select a tab to view sub-endpoints
+            Test and demo API endpoints. Select a tab to view the endpoints for those sections
             and call them to see their responses.
           </p>
         </div>

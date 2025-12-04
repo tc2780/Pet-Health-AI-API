@@ -7,17 +7,18 @@ import asyncio
 import aiohttp
 import json
 import os
+import sys
 from typing import Dict, List, Any
 
 
 class VeterinaryDemo:
     """Demonstration of AI-powered veterinary analysis"""
     
-    def __init__(self):
+    def __init__(self, model="llama3.2:3b"):
         # Get Ollama URL from environment variable (for Docker) or use localhost
         ollama_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.ollama_url = f"{ollama_base}/api/generate"
-        self.model = "llama3.2:3b"
+        self.model = model
         
     def get_test_cases(self) -> List[Dict[str, Any]]:
         """Define realistic test cases for different urgency levels"""
@@ -173,7 +174,7 @@ Respond only with the JSON object, no other text."""
         print("🏥 PET HEALTH AI ASSISTANT - DEMONSTRATION")
         print("=" * 60)
         print("This demo showcases AI-powered veterinary symptom analysis")
-        print("using local LLM (Ollama with llama3.2:3b)")
+        print(f"using local LLM (Ollama with {self.model})")
         print("=" * 60)
         
         test_cases = self.get_test_cases()
@@ -195,7 +196,7 @@ Respond only with the JSON object, no other text."""
         print("🎉 DEMONSTRATION COMPLETE!")
         print("=" * 60)
         print("\n🏥 Pet Health API Features:")
-        print("   ✅ Local LLM integration (llama3.2:3b)")
+        print(f"   ✅ Local LLM integration ({self.model})")
         print("   ✅ Professional veterinary analysis")
         print("   ✅ Intelligent urgency assessment")
         print("   ✅ Privacy-preserving (no external APIs)")
@@ -205,7 +206,18 @@ Respond only with the JSON object, no other text."""
 
 async def main():
     """Main entry point"""
-    demo = VeterinaryDemo()
+    # Parse command line arguments for model selection
+    model = "llama3.2:3b"  # Default to more accurate model
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["1b", "llama3.2:1b"]:
+            model = "llama3.2:1b"
+        elif sys.argv[1] in ["3b", "llama3.2:3b"]:
+            model = "llama3.2:3b"
+        else:
+            print(f"Usage: {sys.argv[0]} [1b|3b|llama3.2:1b|llama3.2:3b]")
+            print(f"Defaulting to {model}")
+    
+    demo = VeterinaryDemo(model)
     await demo.run_demo()
 
 

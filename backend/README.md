@@ -33,7 +33,11 @@ open http://localhost:8000/docs
 4. **Set up AI model (first time only)**:
 ```bash
 # Pull the Llama model for local AI processing
+# Default: More accurate model (recommended)
 docker compose exec ollama ollama pull llama3.2:3b
+
+# Alternative: Faster model (if resources are limited)
+docker compose exec ollama ollama pull llama3.2:1b
 ```
 
 ## 📊 **Services Overview**
@@ -346,7 +350,7 @@ alembic upgrade head
 
 The API uses local AI processing for privacy-first veterinary guidance:
 
-- **Local LLM**: Ollama with Llama 3.2:3b for symptom analysis
+- **Local LLM**: Ollama with Llama 3.2 (1b or 3b variants) for symptom analysis
 - **Privacy-First**: All AI processing happens locally
 - **Conservative Approach**: Provides cautious recommendations with disclaimers
 - **Fallback Support**: Graceful degradation when AI service unavailable
@@ -385,7 +389,7 @@ docker compose down -v
    ```bash
    docker compose logs ollama
    # Pull the model if not already downloaded
-   docker compose exec ollama ollama pull llama3.2:3b
+   docker compose exec ollama ollama pull llama3.2:3b  # or llama3.2:1b
    ```
 
 3. **Port Conflicts**:
@@ -407,7 +411,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 # AI Configuration
 AI_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:3b
+OLLAMA_MODEL=llama3.2:3b  # Options: llama3.2:3b (more accurate) or llama3.2:1b (faster)
 
 # Features
 DEBUG=true

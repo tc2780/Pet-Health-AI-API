@@ -63,6 +63,7 @@ graph TB
     HEALTH --> PROMETHEUS
     PROMETHEUS --> GRAFANA
 ```
+(PNG version of the diagram can be found [here](architecture_diagram.png))
 
 ## Component Details
 
@@ -109,6 +110,7 @@ sequenceDiagram
     S-->>A: Return symptom ID
     A-->>C: HTTP 201 Created
 ```
+(PNG version of the diagram can be found [here](symptom_tracking_flow.png))
 
 ### **AI Assessment Flow**
 ```mermaid
@@ -128,6 +130,7 @@ sequenceDiagram
     AI-->>A: Return analysis
     A-->>C: AI assessment response
 ```
+(PNG version of the diagram can be found [here](ai_assessment_flow.png))
 
 ## Deployment Architecture
 

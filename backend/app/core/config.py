@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # AI Service settings
     ai_provider: str = "ollama"  # "ollama" or "openai"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.1:latest"
+    ollama_model: str = "llama3.2:3b"  # "llama3.2:3b" (more accurate) or "llama3.2:1b" (faster)
     openai_api_key: Optional[str] = None
     
     # Application settings

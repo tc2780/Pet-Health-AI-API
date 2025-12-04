@@ -7,11 +7,12 @@ import asyncio
 import aiohttp
 import json
 import os
+import sys
 
 
-async def test_ollama_connectivity():
+async def test_ollama_connectivity(model="llama3.2:1b"):
     """Test basic Ollama API connectivity and response parsing"""
-    print("🧪 Testing Ollama AI Integration...")
+    print(f"🧪 Testing Ollama AI Integration with {model}...")
     print("=" * 60)
     
     # Simple test prompt for veterinary analysis
@@ -37,7 +38,7 @@ Provide a JSON response with exactly these fields:
 Respond only with the JSON object, no other text."""
 
     payload = {
-        "model": "llama3.2:3b",
+        "model": model,
         "prompt": test_prompt,
         "stream": False,
         "options": {
@@ -129,5 +130,16 @@ Respond only with the JSON object, no other text."""
 
 
 if __name__ == "__main__":
-    success = asyncio.run(test_ollama_connectivity())
+    # Parse command line arguments for model selection
+    model = "llama3.2:3b"  # Default to more accurate model
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["1b", "llama3.2:1b"]:
+            model = "llama3.2:1b"
+        elif sys.argv[1] in ["3b", "llama3.2:3b"]:
+            model = "llama3.2:3b"
+        else:
+            print(f"Usage: {sys.argv[0]} [1b|3b|llama3.2:1b|llama3.2:3b]")
+            print(f"Defaulting to {model}")
+    
+    success = asyncio.run(test_ollama_connectivity(model))
     exit(0 if success else 1)

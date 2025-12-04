@@ -29,7 +29,11 @@ docker compose ps ollama
 docker compose exec ollama ollama list
 
 # 4. If model missing, pull it
+# Default: More accurate model (recommended)
 docker compose exec ollama ollama pull llama3.2:3b
+
+# Alternative: Faster model (if resources are limited)
+docker compose exec ollama ollama pull llama3.2:1b
 ```
 
 ## 🧪 Quick Validation
@@ -51,7 +55,12 @@ docker compose exec api python demo_scripts/ai_veterinary_demo.py
 **Use Case:** Convenient way to explore all demos
 
 ```bash
+# Launch interactive menu
 docker compose exec api python demo_scripts/run_demo.py
+
+# Model selection within menu:
+# Type '1 3b' or '2 1b' to run with specific model
+# Example: '1 1b' runs Ollama test with 1b model
 ```
 
 ### 2. `ollama_direct_test.py`
@@ -60,7 +69,12 @@ docker compose exec api python demo_scripts/run_demo.py
 **Runtime:** ~5 seconds
 
 ```bash
+# Use default model (llama3.2:3b)
 docker compose exec api python demo_scripts/ollama_direct_test.py
+
+# Or specify model
+docker compose exec api python demo_scripts/ollama_direct_test.py 3b
+docker compose exec api python demo_scripts/ollama_direct_test.py 1b
 ```
 
 **Features:**
@@ -75,7 +89,12 @@ docker compose exec api python demo_scripts/ollama_direct_test.py
 **Runtime:** ~30-60 seconds
 
 ```bash
+# Use default model (llama3.2:3b)
 docker compose exec api python demo_scripts/ai_veterinary_demo.py
+
+# Or specify model
+docker compose exec api python demo_scripts/ai_veterinary_demo.py 3b
+docker compose exec api python demo_scripts/ai_veterinary_demo.py 1b
 ```
 
 **Test Cases:**
@@ -89,7 +108,12 @@ docker compose exec api python demo_scripts/ai_veterinary_demo.py
 **Runtime:** ~20-40 seconds
 
 ```bash
+# Use default model (llama3.2:3b)
 docker compose exec api python demo_scripts/service_integration_test.py
+
+# Or specify model
+docker compose exec api python demo_scripts/service_integration_test.py 3b
+docker compose exec api python demo_scripts/service_integration_test.py 1b
 ```
 
 **Features:**

@@ -17,7 +17,11 @@
 
 2. **Download the AI model** (first time only):
    ```bash
+   # Default: More accurate model (recommended)
    docker compose exec ollama ollama pull llama3.2:3b
+   
+   # Alternative: Faster model (if resources are limited)
+   docker compose exec ollama ollama pull llama3.2:1b
    ```
 
 3. **Verify everything is running**:
@@ -46,6 +50,12 @@ docker compose exec api python demo_scripts/end_to_end_workflow_test.py
 
 # Test Ollama integration directly
 docker compose exec api python demo_scripts/ollama_direct_test.py
+```
+
+Note: You can specify the model to use by adding an argument (`1b` for faster, `3b` for more accurate). Example:
+
+```bash
+docker compose exec api python demo_scripts/ai_veterinary_demo.py 1b
 ```
 
 ### Run Tests

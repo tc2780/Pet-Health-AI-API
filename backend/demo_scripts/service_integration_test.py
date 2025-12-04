@@ -11,6 +11,13 @@ from uuid import uuid4
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# Set model before importing service (will be read by config)
+if len(sys.argv) > 1 and sys.argv[1] in ["1b", "3b", "llama3.2:1b", "llama3.2:3b"]:
+    model_arg = sys.argv[1]
+    model = "llama3.2:1b" if "1b" in model_arg else "llama3.2:3b"
+    os.environ["OLLAMA_MODEL"] = model
+    print(f"🤖 Using model: {model}\n")
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -176,4 +183,11 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Usage instructions
+    if len(sys.argv) > 1 and sys.argv[1] in ["-h", "--help"]:
+        print("Usage: python service_integration_test.py [1b|3b]")
+        print("  1b  - Use llama3.2:1b model (faster)")
+        print("  3b  - Use llama3.2:3b model (more accurate, default)")
+        sys.exit(0)
+    
     asyncio.run(main())

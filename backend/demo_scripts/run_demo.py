@@ -12,6 +12,8 @@ def print_menu():
     print("\n" + "=" * 60)
     print("🏥 PET HEALTH API - DEMO LAUNCHER")
     print("=" * 60)
+    print("\nModel Selection: Type '1b' or '3b' after menu number for AI demos")
+    print("  Example: '1 1b' or '2 3b' (defaults to 3b if not specified)")
     print("\nAvailable Demos:")
     print("\n1. 🔌 Ollama Connectivity Test")
     print("   Quick test to verify Ollama is running and responding")
@@ -39,14 +41,17 @@ def print_menu():
     print("\n" + "=" * 60)
 
 
-def run_script(script_name):
-    """Run a demo script"""
+def run_script(script_name, model=None):
+    """Run a demo script with optional model parameter"""
     try:
-        print(f"\n▶️  Running {script_name}...\n")
-        result = subprocess.run(
-            ["python", f"demo_scripts/{script_name}"],
-            check=False
-        )
+        model_info = f" (using {model})" if model else ""
+        print(f"\n▶️  Running {script_name}{model_info}...\n")
+        
+        cmd = ["python", f"demo_scripts/{script_name}"]
+        if model:
+            cmd.append(model)
+        
+        result = subprocess.run(cmd, check=False)
         return result.returncode == 0
     except Exception as e:
         print(f"❌ Error running script: {e}")
@@ -66,17 +71,22 @@ def main():
     """Main menu loop"""
     while True:
         print_menu()
-        choice = input("\nSelect demo (0-5): ").strip()
+        user_input = input("\nSelect demo (0-5): ").strip()
+        
+        # Parse choice and optional model
+        parts = user_input.split()
+        choice = parts[0] if parts else ""
+        model = parts[1] if len(parts) > 1 and parts[1] in ["1b", "3b"] else None
         
         if choice == "0":
             print("\n👋 Goodbye!")
             break
         elif choice == "1":
-            run_script("ollama_direct_test.py")
+            run_script("ollama_direct_test.py", model)
         elif choice == "2":
-            run_script("ai_veterinary_demo.py")
+            run_script("ai_veterinary_demo.py", model)
         elif choice == "3":
-            run_script("service_integration_test.py")
+            run_script("service_integration_test.py", model)
         elif choice == "4":
             run_script("end_to_end_workflow_test.py")
         elif choice == "5":
