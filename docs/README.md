@@ -35,7 +35,7 @@ Quality assurance and reliability verification:
 
 - **`reliability-testing.md`** - Testing pyramid, chaos engineering, load testing
 
-> **Note**: Automated compliance tests have been implemented as executable Python tests at `backend/tests/test_clause_control_fixed.py`
+> **Note**: Automated compliance tests have been implemented as executable Python tests at `backend/tests/clause_control_tests/`
 
 ### 📋 **Development Logs** (`logs/`)
 Project development tracking and AI collaboration:
@@ -56,7 +56,7 @@ This documentation satisfies all capstone project requirements:
 ### ✅ **Clause→Control→Test + Ethics**
 - **Ethics Framework**: Comprehensive guidelines in `compliance/ethics-framework.md`
 - **Clause Mapping**: Requirements mapped to controls and tests in `compliance/clause-control-test.md`
-- **Test Implementation**: Runnable compliance tests in `backend/tests/test_clause_control_fixed.py` (25 test functions)
+- **Test Implementation**: Runnable compliance tests in `backend/tests/clause_control_tests/` directory (31 test functions organized by clause)
 - **Ethics Debt**: Tracking and resolution in `compliance/ethics_debt_ledger.md`
 
 ### ✅ **Operational Readiness**
