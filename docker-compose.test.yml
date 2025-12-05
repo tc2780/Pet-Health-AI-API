@@ -1,0 +1,53 @@
+# Docker Compose override for running tests
+# Use with: docker compose -f docker-compose.yml -f docker-compose.test.yml
+
+services:
+  # Test runner service - runs tests inside Docker environment
+  test-runner:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pet-health-test-runner
+    networks:
+      - pet-health-network
+    environment:
+      - API_BASE_URL=http://api:8000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=petdb
+      - POSTGRES_USER=petuser
+      - POSTGRES_PASSWORD=petpassword
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock  # For chaos testing
+    command: ["tail", "-f", "/dev/null"]  # Keep container running
+    depends_on:
+      api:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - test
+
+  # Add test results volume
+  test-results:
+    image: alpine:latest
+    container_name: pet-health-test-results
+    volumes:
+      - test-results-data:/test-results
+    profiles:
+      - test
+
+volumes:
+  test-results-data:
+    driver: local
+
+networks:
+  pet-health-network:
+    external: false

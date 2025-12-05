@@ -8,14 +8,44 @@ import os
 from pathlib import Path
 
 
+def is_docker_environment():
+    """Check if we're running inside a Docker container"""
+    return os.path.exists('/.dockerenv')
+
+
+def get_environment_info():
+    """Get information about the current environment"""
+    if is_docker_environment():
+        return {
+            "type": "docker",
+            "api_url": os.getenv("API_BASE_URL", "http://api:8000"),
+            "description": "Docker container environment"
+        }
+    else:
+        return {
+            "type": "local",
+            "api_url": "http://localhost:8000", 
+            "description": "Local development environment"
+        }
+
+
 def run_tests():
     """Run the test suite"""
     # Change to the backend directory
     backend_dir = Path(__file__).parent
     os.chdir(backend_dir)
     
+    env_info = get_environment_info()
+    
     print("🧪 Running Pet Health API Unit Tests")
     print("=" * 50)
+    print(f"Environment: {env_info['description']}")
+    print(f"API URL: {env_info['api_url']}")
+    print("=" * 50)
+    
+    # Set environment variables for tests
+    test_env = os.environ.copy()
+    test_env["API_BASE_URL"] = env_info["api_url"]
     
     # Basic pytest command
     cmd = [
@@ -29,7 +59,7 @@ def run_tests():
     
     try:
         # Run the tests
-        result = subprocess.run(cmd, capture_output=False, text=True)
+        result = subprocess.run(cmd, capture_output=False, text=True, env=test_env)
         
         print("\n" + "=" * 50)
         if result.returncode == 0:
@@ -116,21 +146,136 @@ def check_dependencies():
     return True
 
 
+def run_performance_tests():
+    """Run performance tests only"""
+    backend_dir = Path(__file__).parent
+    os.chdir(backend_dir)
+    
+    print("🚀 Running Performance Tests")
+    print("=" * 40)
+    
+    cmd = [
+        "python", "-m", "pytest",
+        "tests/performance/",
+        "-v",
+        "-m", "performance",
+        "--tb=short",
+        "--asyncio-mode=auto",
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=False, text=True)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"❌ Performance tests failed: {e}")
+        return False
+
+
+def run_chaos_tests():
+    """Run chaos engineering tests"""
+    backend_dir = Path(__file__).parent
+    os.chdir(backend_dir)
+    
+    print("🔥 Running Chaos Engineering Tests")
+    print("=" * 45)
+    print("⚠️  Warning: These tests will stop/restart Docker containers")
+    
+    cmd = [
+        "python", "-m", "pytest",
+        "tests/chaos/",
+        "-v",
+        "-m", "chaos",
+        "--tb=short", 
+        "--asyncio-mode=auto",
+        "-s",  # Don't capture output for chaos tests
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=False, text=True)
+        return result.returncode == 0
+    except Exception as e:
+        print(f"❌ Chaos tests failed: {e}")
+        return False
+
+
+def run_all_tests_including_performance():
+    """Run all tests including performance and chaos tests"""
+    backend_dir = Path(__file__).parent
+    os.chdir(backend_dir)
+    
+    print("🧪 Running Complete Test Suite (Including Performance & Chaos)")
+    print("=" * 65)
+    
+    # Run standard tests first
+    success = run_tests()
+    if not success:
+        print("❌ Standard tests failed, skipping performance tests")
+        return False
+    
+    # Run performance tests
+    print("\n" + "=" * 65)
+    perf_success = run_performance_tests()
+    if not perf_success:
+        print("❌ Performance tests failed")
+    
+    # Ask user before running chaos tests
+    print("\n" + "=" * 65)
+    print("🔥 Chaos engineering tests will stop/restart Docker containers")
+    user_input = input("Run chaos tests? (y/N): ").strip().lower()
+    
+    chaos_success = True
+    if user_input in ['y', 'yes']:
+        chaos_success = run_chaos_tests()
+    else:
+        print("⏭️  Skipping chaos tests")
+    
+    return success and perf_success and chaos_success
+
+
 def main():
     """Main test runner"""
-    if len(sys.argv) > 1 and sys.argv[1] == "--coverage":
-        # Run with coverage
-        if not check_dependencies():
-            sys.exit(1)
+    if len(sys.argv) > 1:
+        test_type = sys.argv[1]
         
-        # Also check for coverage package
-        try:
-            import coverage
-        except ImportError:
-            print("❌ pytest-cov not found. Install with: pip install pytest-cov")
-            sys.exit(1)
+        if test_type == "--coverage":
+            # Run with coverage
+            if not check_dependencies():
+                sys.exit(1)
             
-        success = run_tests_with_coverage()
+            # Also check for coverage package
+            try:
+                import coverage
+            except ImportError:
+                print("❌ pytest-cov not found. Install with: pip install pytest-cov")
+                sys.exit(1)
+                
+            success = run_tests_with_coverage()
+            
+        elif test_type == "--performance":
+            # Run performance tests
+            if not check_dependencies():
+                sys.exit(1)
+            success = run_performance_tests()
+            
+        elif test_type == "--chaos":
+            # Run chaos tests
+            if not check_dependencies():
+                sys.exit(1)
+            success = run_chaos_tests()
+            
+        elif test_type == "--all":
+            # Run all tests including performance and chaos
+            if not check_dependencies():
+                sys.exit(1)
+            success = run_all_tests_including_performance()
+            
+        else:
+            print("❌ Unknown test type. Available options:")
+            print("   --coverage    Run tests with coverage")
+            print("   --performance Run performance tests")
+            print("   --chaos       Run chaos engineering tests")
+            print("   --all         Run all tests including performance and chaos")
+            sys.exit(1)
     else:
         # Run basic tests
         if not check_dependencies():

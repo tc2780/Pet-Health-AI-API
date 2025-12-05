@@ -7,46 +7,95 @@ This directory contains comprehensive unit tests for all API endpoints and funct
 ### Test Structure
 ```
 tests/
-├── conftest.py                    # Test configuration and fixtures
-├── test_clause_control_fixed.py  # Privacy & compliance validation tests
-├── unit/                          # Unit tests for services and core functionality  
-│   ├── test_auth_service.py      # Authentication service tests
-│   ├── test_core_utilities.py    # Core utility function tests
-│   ├── test_pet_service.py       # Pet service layer tests
-│   ├── test_symptom_service.py   # Symptom and AI analysis service tests
-│   └── test_user_service.py      # User service layer tests
-├── integration/                   # API integration tests
-│   ├── test_auth.py              # Authentication endpoints
-│   ├── test_health_and_general.py # Health checks and general API
-│   ├── test_pets.py              # Pet management endpoints
-│   └── test_users.py             # User management endpoints
-└── ai/                           # AI and ML integration tests
-    ├── test_ollama_integration.py # Direct Ollama API tests
-    ├── test_performance.py        # AI performance and benchmarks
-    └── test_symptom_analysis.py   # End-to-end AI symptom analysis
+├── conftest.py                       # Test configuration and fixtures
+├── unit/                            # Unit tests for services and core functionality  
+│   ├── test_auth_service.py         # Authentication service tests
+│   ├── test_core_utilities.py       # Core utility function tests
+│   ├── test_pet_service.py          # Pet service layer tests
+│   ├── test_symptom_service.py      # Symptom and AI analysis service tests
+│   └── test_user_service.py         # User service layer tests
+├── integration/                     # API integration tests
+│   ├── test_auth.py                 # Authentication endpoints
+│   ├── test_health_and_general.py  # Health checks and general API
+│   ├── test_pets.py                 # Pet management endpoints
+│   └── test_users.py                # User management endpoints
+├── ai/                             # AI and ML integration tests
+│   ├── test_ollama_integration.py  # Direct Ollama API tests
+│   ├── test_performance.py         # AI performance and benchmarks
+│   └── test_symptom_analysis.py    # End-to-end AI symptom analysis
+├── clause_control_tests/           # Privacy & compliance validation tests
+│   ├── test_e1_medical_disclaimer.py  # Medical disclaimer requirements
+│   ├── test_e2_conservative_advice.py # Conservative AI advice
+│   ├── test_e3_bias_prevention.py     # Bias prevention controls
+│   ├── test_p1_data_minimization.py   # Data minimization controls
+│   ├── test_p2_purpose_limitation.py  # Purpose limitation enforcement
+│   ├── test_p3_user_control.py        # User data control rights
+│   └── test_p4_local_ai_processing.py # Local AI processing verification
+├── performance/                    # Performance and load testing
+│   └── test_load_testing.py        # Comprehensive load testing suite
+└── chaos/                         # Chaos engineering and resilience testing
+    └── test_chaos_engineering.py   # Chaos experiments and failure simulation
 ```
 
-### Test Coverage (164 Total Tests)
+### Test Coverage (171 Total Tests)
 - ✅ **Unit Tests (103 tests)** - Service layer, core utilities, business logic
 - ✅ **Integration Tests (18 tests)** - API endpoints, database persistence
 - ✅ **AI Tests (19 tests)** - Ollama integration, symptom analysis, performance
-- ✅ **Compliance Tests (24 tests)** - Privacy controls, ethics validation, data export
+- ✅ **Compliance Tests (31 tests)** - Privacy controls, ethics validation, data export
+- ✅ **Performance Tests (9 tests)** - Load testing, stress testing, baseline performance
+- ✅ **Chaos Tests (6 tests)** - Resilience testing, failure recovery, chaos experiments
 
 ## Running Tests
 
-### Prerequisites
+### Docker Testing (Recommended)
+
+Use the Docker testing infrastructure for production-like conditions:
+
 ```bash
-# Start the Docker containers
+# Complete test suite with comprehensive reporting
+./run-docker-tests.sh all
+
+# Run specific test categories
+./run-docker-tests.sh standard      # Unit, integration, AI, compliance (164 tests)
+./run-docker-tests.sh performance   # Load and stress testing
+./run-docker-tests.sh chaos         # Chaos engineering and resilience
+
+# Manual Docker execution
 docker compose up -d
+docker compose exec api python docker_run_tests.py all
 ```
 
-### Basic Test Run
+### Basic Docker Test Commands
+
 ```bash
+# Prerequisites: Start all services
+docker compose up -d
+
 # Run all tests (164 tests)
 docker compose exec api pytest tests/ -v
 
 # Quick comprehensive test
 docker compose exec api pytest tests/ --tb=short -q
+
+# Run by category
+docker compose exec api pytest tests/unit/ -v           # Unit tests (103)
+docker compose exec api pytest tests/integration/ -v   # Integration tests (18)
+docker compose exec api pytest tests/ai/ -v           # AI tests (19)
+docker compose exec api pytest tests/ -m compliance   # Compliance tests (24)
+```
+
+### Local Development Testing
+
+For quick development iteration (requires local setup):
+
+```bash
+cd backend
+
+# Run all tests (164 tests)
+python -m pytest tests/ -v
+
+# Quick test run
+python -m pytest tests/ --tb=short -q
 
 # Run by category
 docker compose exec api pytest tests/unit/ -v           # Service layer tests
@@ -208,9 +257,10 @@ docker compose logs api
 ## Sample Test Output
 
 ```bash
-🧪 Running Pet Health API Unit Tests
-==================================================
+🐳 Starting Docker-based Test Suite
+=====================================
 
+# Standard Tests (166/171 passing)
 tests/unit/test_auth_service.py::TestAuthService::test_get_current_user_success PASSED
 tests/unit/test_pet_service.py::TestPetServiceQueries::test_get_pet_by_id_found PASSED  
 tests/unit/test_symptom_service.py::TestSymptomServicePrivateMethods::test_parse_ai_response_valid_json PASSED
@@ -219,36 +269,49 @@ tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_crud_database_pe
 tests/integration/test_users.py::TestUserAPIIntegration::test_user_update_database_persistence PASSED
 tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_ollama_api_connectivity PASSED
 tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_ai_analysis_success PASSED
-tests/test_clause_control_fixed.py::test_complete_data_export PASSED
-tests/test_clause_control_fixed.py::TestRedBarCompliance::test_no_external_ai_calls_RED_BAR PASSED
+tests/clause_control_tests/test_p3_user_control.py::test_complete_data_export PASSED
+tests/clause_control_tests/test_p4_local_ai_processing.py::test_local_llm_processing PASSED
 
-========== 161 passed, 3 skipped in 52.74s ==========
+# Performance Tests (7/9 passing)
+🎯 Health Endpoint Baseline: 100% success, 0.4ms avg response time
+🔐 Auth Endpoints Baseline: 100% success, 1.2ms avg response time  
+🐕 Pet Operations Baseline: 100% success, 1.8ms avg response time
+🚀 Load Test (25 users): 89% success rate, 10.5 req/sec
+⚡ Stress Test (50 users): 90% success rate, 20.7 req/sec
+
+========== 166 passed, 5 skipped, 16 deselected in 22.51s ==========
 
 ==================================================
-✅ 98.2% test success rate! (161/164 passed, 3 skipped)
+✅ 97% test success rate! (166/171 standard tests passing, 7/9 performance tests passing)
 ```
 
 ## Docker Test Commands Reference
 
 ```bash
-# Quick test runs
-docker compose exec api pytest tests/integration/ -v
-docker compose exec api pytest tests/unit/ -v
-docker compose exec api pytest tests/ai/ -v
+# Complete Test Suite (Recommended)
+./run-docker-tests.sh all           # All tests with comprehensive reporting
+./run-docker-tests.sh standard      # Standard tests (unit, integration, AI, compliance)
+./run-docker-tests.sh performance   # Performance and load testing
+./run-docker-tests.sh chaos         # Chaos engineering tests
 
-# Specific test categories
-docker compose exec api pytest tests/integration/test_pets.py -v
-docker compose exec api pytest tests/integration/test_auth.py -v
-docker compose exec api pytest tests/unit/test_auth_service.py -v
-docker compose exec api pytest tests/ai/test_performance.py -v
+# Manual Docker Test Execution
+docker compose up -d
+docker compose exec api python -m pytest tests/ -v                    # All tests (171)
+docker compose exec api python -m pytest tests/unit/ -v               # Unit tests (103)
+docker compose exec api python -m pytest tests/integration/ -v        # Integration tests (18)
+docker compose exec api python -m pytest tests/ai/ -v                 # AI tests (19)
+docker compose exec api python -m pytest tests/clause_control_tests/ -v # Compliance tests (31)
+docker compose exec api python -m pytest tests/performance/ -v        # Performance tests (9)
+docker compose exec api python -m pytest tests/chaos/ -v              # Chaos tests (6)
 
-# AI-specific tests (requires Ollama setup)
-docker compose exec api pytest tests/ai/test_ollama_integration.py -v
-docker compose exec api pytest tests/ai/test_symptom_analysis.py -v
+# Specific test categories with markers
+docker compose exec api python -m pytest -m "not ai" -v              # Skip AI tests
+docker compose exec api python -m pytest -m performance -v            # Only performance tests
+docker compose exec api python -m pytest -m "not slow" -v             # Skip slow tests
 
 # Coverage and reporting
-docker compose exec api pytest tests/ --cov=app --cov-report=html --cov-report=term
-docker compose exec api pytest tests/ --tb=short -q
+docker compose exec api python -m pytest tests/ --cov=app --cov-report=html --cov-report=term
+docker compose exec api python -m pytest tests/ --tb=short -q         # Quick summary
 ```
 
 ## Writing New Tests

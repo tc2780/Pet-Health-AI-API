@@ -24,7 +24,25 @@ Each test file corresponds to a specific compliance clause category:
 
 ## Running the Tests
 
-### Run All Clause Control Tests
+### Docker Testing (Recommended)
+
+Run compliance tests in Docker environment:
+
+```bash
+# Run all compliance tests via Docker test runner
+./run-docker-tests.sh standard   # Includes compliance tests as part of standard suite
+
+# Manual Docker execution
+docker compose up -d
+docker compose exec api python -m pytest tests/clause_control_tests/ -v
+
+# Run specific compliance categories
+docker compose exec api python -m pytest tests/clause_control_tests/ -m privacy -v
+docker compose exec api python -m pytest tests/clause_control_tests/ -m ethics -v
+```
+
+### Local Development Testing
+
 ```bash
 # From backend directory
 python -m pytest tests/clause_control_tests/ -v

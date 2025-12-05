@@ -40,6 +40,33 @@ docker compose exec ollama ollama pull llama3.2:3b
 docker compose exec ollama ollama pull llama3.2:1b
 ```
 
+## 🧪 Testing
+
+The API includes comprehensive testing with Docker-based execution for production-like conditions.
+
+### Quick Test Execution
+
+```bash
+# Run all tests in Docker environment (recommended)
+./run-docker-tests.sh
+
+# Run specific test types
+./run-docker-tests.sh standard      # Unit, integration, AI tests (2-5 min)
+./run-docker-tests.sh performance   # Load and stress tests (5-10 min) 
+./run-docker-tests.sh chaos         # Resilience testing (10-15 min)
+
+# Local testing (requires setup)
+cd backend && python run_tests.py
+```
+
+### Test Categories
+
+| Test Type | Coverage | Duration | Purpose |
+|-----------|----------|----------|---------|
+| **Standard** | Unit, Integration, AI | 2-5 min | Core functionality validation |
+| **Performance** | Load, Stress, Throughput | 5-10 min | Performance benchmarking |
+| **Chaos** | Failure simulation | 10-15 min | Resilience and recovery testing |
+
 ## 📊 **Services Overview**
 
 | Service | Port | Description |
