@@ -129,6 +129,8 @@ docker compose exec api python -m pytest tests/ai/ -v             # AI functiona
 docker compose exec api python -m pytest tests/clause_control_tests/ -v  # Compliance
 ```
 
+> **Note**: Snapshots of test results are available in [here](backend/tests/results/).
+
 **Test Coverage Summary:**
 - ✅ **Total Tests**: 187 automated tests
 - ✅ **Success Rate**: 97% (181/187 passing)
