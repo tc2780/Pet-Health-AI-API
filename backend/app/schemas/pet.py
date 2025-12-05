@@ -4,12 +4,9 @@ Pet schemas for request/response validation
 from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
-
-if TYPE_CHECKING:
-    from .symptom import Symptom, SymptomAssessment
 
 
 # Base pet schema
@@ -51,5 +48,10 @@ class Pet(PetBase):
 
 # Pet with symptoms
 class PetWithSymptoms(Pet):
-    symptoms: list = []
-    assessments: list = []
+    symptoms: List['Symptom'] = []
+    assessments: List['SymptomAssessment'] = []
+
+
+# Import at the end to resolve circular dependencies
+from app.schemas.symptom import Symptom, SymptomAssessment
+PetWithSymptoms.model_rebuild()
