@@ -1,12 +1,21 @@
 # Pet Health API - OpenAPI Specification
 
 ## Overview
-RESTful API for pet health management with AI-powered symptom analysis using local Ollama LLM processing.
+RESTful API for pet health management with AI-powered symptom analysis using local Ollama llama3.2:3b model processing.
 
 **Base URL**: `http://localhost:8000/api/v1` (development)  
 **Authentication**: Bearer JWT tokens  
 **OpenAPI Docs**: `http://localhost:8000/docs`  
-**Current Version**: 1.0.0
+**Current Version**: 1.0.0  
+**AI Model**: Ollama llama3.2:3b (local processing)  
+**Docker Environment**: Docker Compose with FastAPI, PostgreSQL, Redis, Ollama
+
+## Architecture Overview
+- **FastAPI**: Async Python web framework
+- **PostgreSQL**: Primary database with persistent volumes
+- **Redis**: Caching and session management
+- **Ollama**: Local LLM processing with llama3.2:3b model
+- **Docker Compose**: Containerized development and deployment
 
 ## Authentication Endpoints
 
@@ -431,57 +440,25 @@ Request:
 
 Response (200):
 {
-  "id": "abc0123-e89b-12d3-a456-426614174003",
-  "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-  "symptoms_json": [...],
+  "assessment_id": "abc0123-e89b-12d3-a456-426614174003",
+  "pet_id": "456e7890-e89b-12d3-a456-426614174001", 
   "urgency_level": "moderate",
-  "analysis": "Based on the symptoms of lethargy and loss of appetite, your Golden Retriever may be experiencing a mild illness or stress. These symptoms can indicate various conditions ranging from minor digestive upset to more serious health issues.",
-  "recommendations": "Monitor your pet closely for the next 24-48 hours. Ensure they have access to fresh water. If symptoms worsen or persist beyond 48 hours, consult with your veterinarian. Watch for additional symptoms like vomiting, diarrhea, or unusual behavior.",
-  "possible_causes": ["dietary indiscretion", "stress", "minor viral infection", "change in routine"],
+  "analysis": "Based on your Golden Retriever's symptoms, I recommend monitoring closely for changes. Here's my assessment: [Detailed AI analysis follows...] **Medical Disclaimer**: This assessment is not a substitute for professional veterinary care. Please consult with a licensed veterinarian for accurate diagnosis and treatment.",
+  "recommendations": [
+    "Monitor pet closely for next 24-48 hours",
+    "Ensure access to fresh water",
+    "Consult veterinarian if symptoms worsen"
+  ],
+  "possible_causes": ["dietary indiscretion", "stress", "minor viral infection"],
+  "confidence_score": 0.78,
   "ai_provider": "ollama",
+  "ai_model": "llama3.2:3b", 
   "processing_time_ms": 2450,
-  "created_at": "2025-12-04T15:00:00Z"
+  "medical_disclaimer": "This AI assessment is for informational purposes only and should not replace professional veterinary advice.",
+  "created_at": "2025-12-05T15:00:00Z"
 }
 ```
 
-### Get Pet Assessments
-```yaml
-GET /api/v1/symptoms/assessments/pet/{pet_id}
-Authorization: Bearer {access_token}
-
-Response (200):
-[
-  {
-    "id": "abc0123-e89b-12d3-a456-426614174003",
-    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-    "urgency_level": "moderate",
-    "analysis": "Based on the symptoms...",
-    "recommendations": "Monitor your pet closely...",
-    "possible_causes": ["dietary indiscretion", "stress"],
-    "ai_provider": "ollama",
-    "created_at": "2025-12-04T15:00:00Z"
-  }
-]
-```
-
-### Get All User Pet Assessments
-```yaml
-GET /api/v1/symptoms/assessments/my-pets
-Authorization: Bearer {access_token}
-
-Response (200):
-[
-  {
-    "id": "abc0123-e89b-12d3-a456-426614174003",
-    "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-    "urgency_level": "moderate",
-    "analysis": "Based on the symptoms...",
-    "recommendations": "Monitor your pet closely...",
-    "possible_causes": ["dietary indiscretion", "stress"],
-    "ai_provider": "ollama",
-    "created_at": "2025-12-04T15:00:00Z"
-  }
-]
 ```
 
 ### Get Specific Assessment
@@ -491,17 +468,21 @@ Authorization: Bearer {access_token}
 
 Response (200):
 {
-  "id": "abc0123-e89b-12d3-a456-426614174003",
+  "assessment_id": "abc0123-e89b-12d3-a456-426614174003",
   "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-  "symptoms_json": [...],
   "urgency_level": "moderate",
-  "analysis": "Based on the symptoms of lethargy and loss of appetite...",
-  "recommendations": "Monitor your pet closely for the next 24-48 hours...",
+  "analysis": "Based on your Golden Retriever's symptoms, detailed analysis...",
+  "recommendations": [
+    "Monitor pet closely for next 24-48 hours",
+    "Ensure access to fresh water"
+  ],
   "possible_causes": ["dietary indiscretion", "stress", "minor viral infection"],
   "ai_provider": "ollama",
+  "ai_model": "llama3.2:3b",
   "processing_time_ms": 2450,
-  "created_at": "2025-12-04T15:00:00Z"
+  "created_at": "2025-12-05T15:00:00Z"
 }
+```
 ```
 
 ## Health & Utility Endpoints
@@ -592,20 +573,79 @@ Response (200):
 
 ## AI Processing Features
 
+### AI Service Integration
+- **Primary Model**: Ollama llama3.2:3b (3GB model size)
+- **Local Processing**: All AI inference runs locally via Docker Compose  
+- **Privacy-First**: Pet health data never leaves your infrastructure
+- **Response Time**: Typically 2-4 seconds for complete assessment
+- **Fallback Handling**: Graceful degradation when Ollama service unavailable
+
+### Model Specifications  
+- **Model**: Meta Llama 3.2 3B Instruct
+- **Quantization**: Optimized for consumer hardware
+- **Context Length**: 128k tokens
+- **Specialization**: Medical and veterinary domain knowledge
+
 ### Urgency Levels
 - **`emergency`**: Life-threatening symptoms requiring immediate veterinary attention
 - **`high`**: Serious symptoms requiring veterinary consultation within 24 hours  
 - **`moderate`**: Concerning symptoms that should be monitored closely, veterinary consultation recommended
 - **`low`**: Mild symptoms that can be monitored at home with routine veterinary care
 
-### AI Provider Integration
-- **Local Processing**: Ollama with Llama 3.2:3b model for privacy-first analysis
-- **Fallback Handling**: Graceful degradation when AI service unavailable
-- **Response Structure**: Standardized JSON format with medical disclaimers
-- **Conservative Approach**: Always errs on the side of caution with veterinary referrals
+### Conservative Medical Approach
+- **Veterinary Referrals**: Always errs on the side of caution
+- **Medical Disclaimers**: Automatic inclusion in all AI responses
+- **Professional Emphasis**: Consistently recommends veterinary consultation
+- **Liability Protection**: Clear limitations of AI assessment capabilities
 
-### Medical Ethics & Disclaimers
-All AI responses include appropriate medical disclaimers and emphasize the importance of professional veterinary care for accurate diagnosis and treatment.
+### Docker Compose Integration
+- **Service Discovery**: AI service accessible via `http://ollama:11434`
+- **Health Checks**: Automatic model availability monitoring
+- **Resource Allocation**: 8GB RAM recommended for optimal performance
+- **Network Isolation**: AI processing contained within Docker network
+
+## System Architecture Integration
+
+### Development Environment
+```bash
+# Start all services
+docker compose up -d
+
+# Service URLs
+API: http://localhost:8000
+Docs: http://localhost:8000/docs  
+PostgreSQL: localhost:5432
+Redis: localhost:6379
+Ollama: localhost:11434
+
+# Health checks
+curl http://localhost:8000/health
+curl http://localhost:11434/api/tags
+```
+
+### Testing Endpoints
+```bash
+# AI functionality test with actual assessment
+curl -X POST http://localhost:8000/api/v1/symptoms/assess \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"pet_id": "your-pet-id"}'
+
+# Health check
+curl http://localhost:8000/health
+
+# API documentation
+curl http://localhost:8000/docs
+
+# Database connectivity
+docker compose exec postgres pg_isready -U petuser
+
+# Redis connectivity  
+docker compose exec redis redis-cli ping
+
+# Ollama service check
+curl http://localhost:11434/api/tags
+```
 
 ## Error Responses
 
@@ -662,6 +702,8 @@ All AI responses include appropriate medical disclaimers and emphasize the impor
 
 ---
 
-**Last Updated**: December 4, 2025  
+**Last Updated**: December 5, 2025  
 **API Version**: 1.0.0  
+**Docker Environment**: Docker Compose V2  
+**AI Model**: Ollama llama3.2:3b  
 **OpenAPI Spec**: Available at `/docs` endpoint

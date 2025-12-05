@@ -1,19 +1,34 @@
 # Cost Model & Operability Guide
 
+*Last Updated: December 5, 2025*
+
+**Current Implementation Status:** Docker Compose deployment with Ollama llama3.2:3b local AI processing
+
+**Related Documents:**
+- [Trust Model](../compliance/trust-model.md) - Security and deployment considerations
+- [Ethics Framework](../compliance/ethics-framework.md) - AI service ethical guidelines
+- [Deployment Instructions](./deployment-instructions.md) - Technical deployment guide
+
 ## Cost Model Analysis
 
 ### **Development Phase Costs**
 
-#### **Zero-Cost Development Setup**
+#### **Zero-Cost Development Setup (Current Implementation)**
 ```yaml
-Local Development (Free):
-  - Hardware: Developer laptop (existing)
-  - Software: All open-source tools
+Local Development (Free - Currently Used):
+  - Hardware: Developer laptop with Docker Desktop
+  - Software: All open-source (FastAPI, PostgreSQL, Redis, Ollama)
   - Docker Desktop: Free for individual use
-  - Ollama + Local LLM: Free forever
+  - Ollama + llama3.2:3b: Free forever (2GB model)
   - GitHub: Free tier for public repos
   - IDE: VS Code (free)
+  - Testing: 187 automated tests run in containers
   - Total: $0/month
+
+Resource Requirements:
+  - RAM: 8GB minimum (4GB for Ollama, 4GB for other services)
+  - Storage: 10GB (2GB for model, 8GB for containers and data)
+  - CPU: 4 cores recommended for AI processing
 ```
 
 #### **Free-Tier Cloud Development**
@@ -34,6 +49,27 @@ Alternative Free Options:
 ```
 
 ### **Production Deployment Costs**
+
+#### **Current Docker Compose Production (Recommended)**
+```yaml
+Single Server Deployment:
+  - Server: $20-40/month (4GB RAM, 2 CPU, 50GB storage)
+  - Docker Compose services:
+    * FastAPI backend (api)
+    * PostgreSQL database (postgres)
+    * Redis cache (redis)
+    * Ollama AI service (ollama with llama3.2:3b)
+  - Domain: $12/year
+  - SSL Certificate: Free (Let's Encrypt)
+  - Monitoring: Free (built-in Docker stats)
+  - Total: $25-45/month
+
+Performance Characteristics:
+  - Handles 100-1K concurrent users
+  - AI processing: 2-5 seconds per assessment
+  - Database: PostgreSQL with proper indexing
+  - Caching: Redis for session and response caching
+```
 
 #### **Small Scale Production (0-1K users)**
 ```yaml
@@ -86,18 +122,25 @@ Cost Per User: $0.13/month (at 10K users)
 
 ### **AI Processing Costs**
 
-#### **Local LLM (Ollama) - Recommended**
+#### **Local LLM (Ollama) - Current Implementation**
 ```yaml
 Infrastructure Costs:
-  - GPU Server (development): $0 (use laptop)
-  - GPU Server (production): $150-300/month
-  - Model storage: 7GB (one-time download)
+  - Development Server: $0 (laptop with 8GB+ RAM)
+  - Production Server: $20-40/month (included in Docker deployment)
+  - Model Storage: 2GB for llama3.2:3b (one-time download)
+  - Model Alternatives: 1.3GB for llama3.2:1b (faster, less accurate)
   - Processing: No per-request costs
-  - Scaling: Linear with server costs
+  - Scaling: Linear with server capacity
+
+Current Performance:
+  - llama3.2:3b: 2-5 seconds per assessment (higher accuracy)
+  - llama3.2:1b: 1-3 seconds per assessment (faster processing)
+  - Concurrent requests: 3-5 (limited by model processing)
+  - Memory usage: 2-4GB per model instance
 
 Cost per AI Request: $0.00 (after infrastructure)
 Monthly at 10K requests: $0.00
-Monthly at 100K requests: $0.00
+Monthly at 100K requests: $0.00 (may need multiple server instances)
 ```
 
 #### **Cloud AI APIs (for comparison)**
@@ -119,38 +162,89 @@ Break-even vs Local LLM:
 
 ### **Cost Optimization Strategies**
 
-#### **Infrastructure Optimization**
+#### **Docker Compose Scaling Strategy**
 ```yaml
-Auto-scaling Configuration:
-  - Minimum instances: 2 (high availability)
-  - Scale up trigger: CPU > 70% for 5 minutes
-  - Scale down trigger: CPU < 30% for 10 minutes
-  - Maximum instances: 10
+Horizontal Scaling with Docker Compose:
+  - Load balancer: nginx (free, $5/month for managed)
+  - API instances: Scale with `docker compose up --scale api=3`
+  - Database: PostgreSQL with read replicas
+  - AI service: Multiple Ollama containers on separate ports
   
-Cost Savings:
-  - Off-peak scaling: 40-60% cost reduction
-  - Spot instances: Additional 50-70% savings
-  - Reserved instances: 30-50% discount for 1-year commit
+Cost-Effective Scaling:
+  - Single server: 0-1K users ($25-45/month)
+  - Multi-server: 1K-5K users ($100-200/month)
+  - Container orchestration: 5K+ users ($300+/month)
+
+Docker Resource Optimization:
+  - Container resource limits prevent resource hogging
+  - Health checks ensure service reliability
+  - Volume mounts for data persistence
+  - Network isolation for security
 ```
 
-#### **Database Cost Management**
+#### **Current Database Implementation**
 ```yaml
-Database Optimization:
-  - Read replicas for analytics: $20/month
-  - Query optimization: 30-50% performance improvement
-  - Connection pooling: Reduce connection overhead
-  - Automated backups: 7-day retention included
+PostgreSQL in Docker:
+  - Development: Single container with persistent volume
+  - Production: Container with backup volumes and replication
+  - Query optimization: SQLAlchemy ORM with indexes
+  - Connection pooling: Built-in asyncpg connection management
 
-Storage Tiering:
-  - Hot data (recent symptoms): SSD storage
-  - Warm data (6+ months): HDD storage  
-  - Cold data (2+ years): Archive storage
+Storage Optimization:
+  - Hot data (recent symptoms): Primary PostgreSQL storage
+  - Warm data (6+ months): Compressed tables with partitioning
+  - Cold data (2+ years): Archive to separate volumes or S3
   - Cost reduction: 60-80% for historical data
+
+Current Schema Efficiency:
+  - Normalized tables with proper foreign keys
+  - Indexes on frequently queried columns
+  - UUID primary keys for security and distribution
+  - Audit trails for compliance and debugging
+```
+
+## Current Operational Status (Dec 2025)
+
+### **Deployment Architecture**
+```yaml
+Current Tech Stack:
+  - Backend: FastAPI with async/await
+  - Database: PostgreSQL 15 with asyncpg
+  - Cache: Redis 7 for sessions and responses
+  - AI Service: Ollama with llama3.2:3b model
+  - Orchestration: Docker Compose with custom networks
+  - Testing: 187 automated tests (31 compliance-focused)
+
+Service Health Monitoring:
+  - Health check endpoints: /health for all services
+  - Container status: docker compose ps
+  - Resource monitoring: docker stats
+  - Log aggregation: docker compose logs
+  - AI service status: Ollama API connectivity tests
+```
+
+### **Current Cost Breakdown**
+```yaml
+Development Environment:
+  - Infrastructure: $0 (local Docker)
+  - AI Processing: $0 (local Ollama)
+  - External Services: $0 (no cloud dependencies)
+  - Total Monthly: $0
+
+Production Ready Deployment:
+  - Single Server (DigitalOcean/Linode): $25-40/month
+  - Domain + SSL: $1/month (amortized)
+  - Monitoring: $0 (built-in Docker monitoring)
+  - Backups: $5/month (automated volume snapshots)
+  - Total Monthly: $30-50/month
+
+Cost per User (at 1K users): $0.03-0.05/month
+Cost per AI Assessment: $0 (after infrastructure)
 ```
 
 ## Monetization Guardrails
 
-### **Freemium Model Controls**
+### **Freemium Model Controls (Future Implementation)**
 ```python
 # app/core/usage_limits.py
 class UsageLimitService:
@@ -265,272 +359,441 @@ SEV4 - Low (< 24hr response):
 
 ### **Incident Response Procedures**
 
-#### **SEV1 - System Outage Response**
+#### **Current Docker Compose Incident Response**
 ```markdown
 ## Immediate Actions (0-15 minutes)
-1. **Acknowledge Alert**
-   - Page on-call engineer immediately
-   - Update status page: "Investigating issue"
-   - Start incident bridge call
+1. **Service Status Check**
+   ```bash
+   # Check all services
+   docker compose ps
+   
+   # Check service logs
+   docker compose logs --tail=50
+   
+   # Check resource usage
+   docker stats
+   ```
 
-2. **Initial Assessment**
-   - Check health dashboard
-   - Verify monitoring systems operational
-   - Identify affected services and user impact
+2. **Quick Service Recovery**
+   ```bash
+   # Restart specific service
+   docker compose restart api
+   
+   # Full system restart
+   docker compose down && docker compose up -d
+   
+   # Check AI service specifically
+   docker compose exec ollama ollama list
+   ```
 
-3. **Emergency Mitigation**
-   - Apply immediate fixes if obvious
-   - Consider fallback to backup systems
-   - Implement read-only mode if necessary
+3. **Health Verification**
+   ```bash
+   # API health check
+   curl http://localhost:8000/health
+   
+   # Database connectivity
+   docker compose exec postgres pg_isready
+   
+   # Redis connectivity
+   docker compose exec redis redis-cli ping
+   ```
 
 ## Investigation Phase (15-60 minutes)
-1. **Root Cause Analysis**
-   - Check recent deployments
-   - Review system logs and metrics
-   - Identify timeline of events
+1. **Container-Specific Debugging**
+   ```bash
+   # View detailed service logs
+   docker compose logs api --since 1h
+   
+   # Check container resource usage
+   docker compose exec api ps aux
+   
+   # Inspect container configuration
+   docker compose config
+   ```
 
-2. **Communication**
-   - Update stakeholders every 15 minutes
-   - Provide ETA for resolution if known
-   - Prepare user communication
-
-3. **Fix Implementation**
-   - Apply fix in staging first if possible
-   - Monitor metrics during deployment
-   - Verify fix resolves issue
-
-## Recovery Phase (1+ hours)
-1. **System Validation**
-   - Run health checks
-   - Verify all services operational
-   - Check data integrity
-
-2. **Post-Incident**
-   - Update status page: "Resolved"
-   - Schedule post-mortem within 48 hours
-   - Document lessons learned
+2. **AI Service Diagnostics**
+   ```bash
+   # Test Ollama connectivity
+   docker compose exec api python demo_scripts/ollama_direct_test.py
+   
+   # Check Ollama model status
+   docker compose exec ollama ollama show llama3.2:3b
+   
+   # Monitor AI processing
+   docker compose logs ollama -f
+   ```
 ```
 
-#### **AI Service Failure Response**
+#### **AI Service Failure Response (Current Implementation)**
 ```python
-# app/core/ai_fallback.py
-class AIFallbackService:
+# Current implementation in app/services/symptom.py
+class SymptomService:
     
-    async def handle_ai_service_failure(self, pet_data: dict, symptoms: list):
-        """Provide fallback response when AI service fails"""
+    async def create_assessment(self, assessment_data: SymptomAssessmentCreate):
+        """Create assessment with AI fallback for service failures"""
         
-        # Check for emergency symptoms first
+        try:
+            # Attempt AI analysis with Ollama
+            ai_analysis = await self._analyze_symptoms_with_ai(
+                str(assessment_data.pet_id), 
+                symptoms_data
+            )
+            
+            # Verify AI response contains required fields
+            if not self._validate_ai_response(ai_analysis):
+                raise ValueError("Invalid AI response format")
+                
+            return ai_analysis
+            
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            # Ollama service failure - use rule-based fallback
+            logger.warning(f"AI service failed: {e}. Using fallback rules.")
+            
+            return self._get_fallback_assessment(symptoms_data)
+    
+    def _get_fallback_assessment(self, symptoms: List[Dict]) -> Dict[str, Any]:
+        """Rule-based fallback when Ollama is unavailable"""
+        
         emergency_keywords = [
             "difficulty breathing", "seizure", "unconscious", 
-            "severe bleeding", "poisoning", "trauma"
+            "severe bleeding", "poisoning", "trauma", "choking"
         ]
         
-        symptom_text = " ".join([s.get("description", "") for s in symptoms]).lower()
+        high_priority_keywords = [
+            "vomiting", "diarrhea", "lethargy", "loss of appetite"
+        ]
+        
+        symptom_text = " ".join([
+            s.get("symptom_name", "").lower() + " " + 
+            s.get("description", "").lower() 
+            for s in symptoms
+        ])
         
         if any(keyword in symptom_text for keyword in emergency_keywords):
-            return {
-                "urgency_level": "emergency",
-                "message": "EMERGENCY: Seek immediate veterinary care",
-                "recommendations": [
-                    "Contact your veterinarian or emergency animal hospital immediately",
-                    "Do not wait for AI analysis - this requires immediate attention"
-                ],
-                "fallback_reason": "AI service unavailable - emergency protocol activated"
-            }
-        
-        # Provide conservative guidance for non-emergency cases
-        return {
-            "urgency_level": "moderate",
-            "message": "AI analysis temporarily unavailable",
-            "recommendations": [
-                "Monitor your pet closely",
-                "Contact your veterinarian if symptoms persist or worsen",
+            urgency = "emergency"
+            recommendations = [
+                "Seek immediate veterinary care - this is an emergency",
+                "Contact your veterinarian or emergency animal hospital now",
+                "Do not wait - immediate professional attention required"
+            ]
+        elif any(keyword in symptom_text for keyword in high_priority_keywords):
+            urgency = "high"
+            recommendations = [
+                "Schedule veterinary appointment within 24 hours",
+                "Monitor your pet closely for any changes",
+                "Provide comfort and ensure access to water"
+            ]
+        else:
+            urgency = "moderate"
+            recommendations = [
+                "Monitor symptoms and contact veterinarian if they persist",
+                "Ensure your pet is comfortable and hydrated",
                 "Keep detailed notes about symptom changes"
-            ],
-            "fallback_reason": "AI service unavailable - conservative guidance provided"
+            ]
+        
+        return {
+            "urgency_level": urgency,
+            "possible_causes": ["Multiple factors could contribute to these symptoms"],
+            "recommendations": recommendations,
+            "warning_signs": ["Worsening symptoms", "Loss of appetite", "Lethargy"],
+            "medical_disclaimer": "This is a fallback assessment. Please consult a veterinarian.",
+            "analysis": "Fallback Rules Applied - AI Service Unavailable"
         }
 ```
 
 ## Runbooks
 
-### **Database Maintenance Runbook**
+### **Docker Compose Database Maintenance**
 ```markdown
-## Monthly Database Maintenance
+## Monthly Database Maintenance (Current Implementation)
 
 ### Pre-maintenance Checklist
 - [ ] Schedule maintenance window (low traffic period)
-- [ ] Notify stakeholders 48 hours in advance
-- [ ] Create full database backup
-- [ ] Verify backup integrity
+- [ ] Create database backup via Docker volume snapshot
+- [ ] Verify backup integrity with test restore
 - [ ] Prepare rollback procedures
 
-### Maintenance Tasks
-1. **Update Statistics**
-   ```sql
+### Maintenance Commands
+1. **Create Database Backup**
+   ```bash
+   # Stop services gracefully
+   docker compose stop api
+   
+   # Create PostgreSQL backup
+   docker compose exec postgres pg_dump -U petuser -d petdb > backup_$(date +%Y%m%d).sql
+   
+   # Create volume backup
+   docker run --rm -v capstone-final-project_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_volume_backup.tar.gz -C /data .
+   ```
+
+2. **Database Maintenance**
+   ```bash
+   # Access PostgreSQL container
+   docker compose exec postgres psql -U petuser -d petdb
+   
+   # Run maintenance commands
    ANALYZE;
    VACUUM;
    REINDEX;
    ```
 
-2. **Check Index Usage**
+3. **Check Performance**
    ```sql
+   -- Check table sizes
+   SELECT tablename, pg_size_pretty(pg_total_relation_size(tablename::regclass)) 
+   FROM pg_tables WHERE schemaname = 'public';
+   
+   -- Check index usage
    SELECT schemaname, tablename, attname, n_distinct, correlation 
    FROM pg_stats 
-   WHERE tablename IN ('pets', 'symptoms', 'assessments');
+   WHERE tablename IN ('pets', 'symptoms', 'symptom_assessments');
    ```
-
-3. **Archive Old Data**
-   - Move symptoms > 2 years to archive tables
-   - Compress old assessment data
-   - Update retention policies
 
 ### Post-maintenance Verification
-- [ ] Verify all services operational
-- [ ] Check response times within SLA
-- [ ] Validate recent data integrity
-- [ ] Monitor for any performance issues
+- [ ] Restart all services: `docker compose up -d`
+- [ ] Run health checks: `curl http://localhost:8000/health`
+- [ ] Run compliance tests: `docker compose exec api python -m pytest tests/clause_control_tests/`
+- [ ] Verify AI service: `docker compose exec api python demo_scripts/ollama_direct_test.py`
 ```
 
-### **Deployment Runbook**
+### **Docker Compose Deployment Runbook**
 ```markdown
-## Production Deployment Process
+## Production Deployment Process (Current Stack)
 
-### Pre-deployment
-- [ ] Code review approved
-- [ ] All tests passing
-- [ ] Database migrations tested
-- [ ] Feature flags configured
-- [ ] Rollback plan documented
+### Pre-deployment Checklist
+- [ ] All 187 tests passing locally
+- [ ] Docker images built and tagged
+- [ ] Environment variables configured
+- [ ] Database migration scripts prepared
+- [ ] AI model (llama3.2:3b) available
 
 ### Deployment Steps
-1. **Enable Maintenance Mode** (if required)
+1. **Backup Current State**
    ```bash
-   kubectl patch deployment api -p '{"spec":{"replicas":0}}'
-   kubectl apply -f maintenance-page.yaml
+   # Backup database
+   docker compose exec postgres pg_dump -U petuser -d petdb > pre_deploy_backup.sql
+   
+   # Backup volumes
+   docker run --rm -v capstone-final-project_postgres_data:/data alpine tar czf postgres_backup.tar.gz -C /data .
    ```
 
-2. **Database Migration**
+2. **Update Application**
    ```bash
-   kubectl exec -it postgres-pod -- psql -U petuser -d petdb -f /migrations/latest.sql
+   # Pull latest code
+   git pull origin main
+   
+   # Rebuild containers with new code
+   docker compose build
+   
+   # Apply database migrations (if any)
+   docker compose exec postgres psql -U petuser -d petdb -f /migrations/latest.sql
+   
+   # Restart services with new images
+   docker compose up -d
    ```
 
-3. **Application Deployment**
+3. **Verification Steps**
    ```bash
-   kubectl set image deployment/api api=pethealth/api:v1.2.3
-   kubectl rollout status deployment/api
+   # Check all services are running
+   docker compose ps
+   
+   # Health check
+   curl http://localhost:8000/health
+   
+   # Test AI service
+   docker compose exec api python demo_scripts/ollama_direct_test.py
+   
+   # Run critical compliance tests
+   docker compose exec api python -m pytest tests/clause_control_tests/test_e1_medical_disclaimer.py -v
    ```
 
-4. **Smoke Tests**
-   - Health check endpoints
-   - Authentication flow
-   - Basic API functionality
-   - AI service connectivity
-
-### Post-deployment
+### Post-deployment Monitoring
+- [ ] Monitor container logs: `docker compose logs -f`
+- [ ] Check resource usage: `docker stats`
+- [ ] Verify AI response quality with demo scripts
 - [ ] Monitor error rates for 30 minutes
-- [ ] Verify all features working
-- [ ] Check performance metrics
-- [ ] Disable maintenance mode
 ```
 
 ## Back-pressure & Kill Switches
 
-### **Rate Limiting Implementation**
+### **Current FastAPI Rate Limiting**
 ```python
-# app/core/rate_limiting.py
+# app/core/rate_limiting.py (Future Implementation)
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+from fastapi import Request, HTTPException
 
-limiter = Limiter(key_func=get_remote_address)
-
-class AdvancedRateLimiter:
+# Current rate limiting would be implemented as:
+class CurrentRateLimiter:
     
     @staticmethod
-    async def adaptive_rate_limit(request, user_tier: str):
-        """Apply different rate limits based on user tier"""
+    async def protect_ai_service(request: Request):
+        """Protect Ollama AI service from overload"""
         
-        limits = {
-            "free": "10/minute",
-            "premium": "100/minute", 
-            "pro": "1000/minute"
+        # Check Ollama service health
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get("http://ollama:11434/api/tags", timeout=1) as response:
+                    if response.status != 200:
+                        raise HTTPException(503, "AI service temporarily unavailable")
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            raise HTTPException(503, "AI service temporarily unavailable")
+        
+        # Check current AI processing load (future implementation)
+        current_assessments = await redis.get("active_ai_assessments") or 0
+        if int(current_assessments) > 5:  # Limit concurrent AI requests
+            raise HTTPException(429, "AI service at capacity, please try again")
+    
+    @staticmethod  
+    async def user_tier_limits(user_id: str) -> dict:
+        """Current user limits (simplified)"""
+        # For now, all users have same limits
+        return {
+            "ai_assessments_per_hour": 10,
+            "api_requests_per_minute": 30
         }
-        
-        return limits.get(user_tier, "5/minute")
-    
-    @staticmethod
-    async def ai_service_protection():
-        """Protect AI service from overload"""
-        
-        current_load = await get_ai_service_load()
-        
-        if current_load > 0.8:  # 80% capacity
-            # Implement back-pressure
-            return "1/minute"  # Severely limited
-        elif current_load > 0.6:  # 60% capacity
-            return "5/minute"  # Moderately limited
-        else:
-            return "30/minute"  # Normal rate
 ```
 
-### **Circuit Breaker Kill Switches**
+### **Docker Compose Kill Switches**
 ```python
-# app/core/kill_switches.py
-class KillSwitchManager:
+# app/core/kill_switches.py (Current Implementation Approach)
+import os
+from typing import Dict, Optional
+from fastapi import HTTPException
+
+class DockerKillSwitchManager:
+    """Kill switch manager for Docker Compose deployment"""
     
     def __init__(self):
+        # Use environment variables for kill switches
         self.switches = {
-            "ai_service": True,
-            "user_registration": True,
-            "symptom_logging": True,
-            "premium_features": True
+            "ai_service": os.getenv("ENABLE_AI_SERVICE", "true").lower() == "true",
+            "user_registration": os.getenv("ENABLE_USER_REGISTRATION", "true").lower() == "true",
+            "symptom_assessment": os.getenv("ENABLE_SYMPTOM_ASSESSMENT", "true").lower() == "true",
         }
     
-    async def disable_feature(self, feature: str, reason: str):
-        """Emergency disable of system features"""
-        
-        await redis.set(f"killswitch:{feature}", "disabled")
-        await redis.set(f"killswitch:{feature}:reason", reason)
-        
-        # Log the kill switch activation
-        logger.critical(f"KILL SWITCH ACTIVATED: {feature} - {reason}")
-        
-        # Send alert to operations team
-        await self.send_kill_switch_alert(feature, reason)
+    async def check_ai_service_health(self) -> bool:
+        """Check if Ollama AI service is healthy"""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "http://ollama:11434/api/tags", 
+                    timeout=aiohttp.ClientTimeout(total=2)
+                ) as response:
+                    return response.status == 200
+        except:
+            return False
     
-    async def is_feature_enabled(self, feature: str) -> bool:
-        """Check if feature is enabled"""
+    async def emergency_disable_ai(self):
+        """Emergency disable AI service"""
+        # In Docker environment, this could stop the Ollama container
+        # docker compose stop ollama
         
-        status = await redis.get(f"killswitch:{feature}")
-        return status != "disabled"
+        # For now, set environment flag and restart
+        os.environ["ENABLE_AI_SERVICE"] = "false"
+        logger.critical("AI SERVICE EMERGENCY DISABLED")
     
-    # Usage in API endpoints
-    async def protected_endpoint(self, feature_name: str):
-        if not await self.is_feature_enabled(feature_name):
-            raise HTTPException(
-                status_code=503,
-                detail=f"Service temporarily unavailable"
-            )
+    async def validate_service_availability(self, service: str):
+        """Check if service should be available"""
+        
+        if service == "ai_assessment":
+            if not self.switches.get("ai_service", True):
+                raise HTTPException(503, "AI assessment temporarily disabled")
+            
+            if not await self.check_ai_service_health():
+                raise HTTPException(503, "AI service health check failed")
+        
+        elif service == "user_registration":
+            if not self.switches.get("user_registration", True):
+                raise HTTPException(503, "User registration temporarily disabled")
 
-# Middleware to check kill switches
-async def kill_switch_middleware(request: Request, call_next):
-    endpoint = request.url.path
+# Usage in FastAPI endpoints
+kill_switch_manager = DockerKillSwitchManager()
+
+@router.post("/symptoms/assess")
+async def assess_symptoms(request: SymptomAssessmentCreate):
+    # Check kill switches before processing
+    await kill_switch_manager.validate_service_availability("ai_assessment")
     
-    kill_switch_map = {
-        "/auth/register": "user_registration",
-        "/ai-vet": "ai_service", 
-        "/symptoms": "symptom_logging"
-    }
+    # Proceed with assessment...
+    return await symptom_service.create_assessment(request)
+
+@router.post("/auth/register") 
+async def register_user(user_data: UserCreate):
+    # Check registration kill switch
+    await kill_switch_manager.validate_service_availability("user_registration")
     
-    for pattern, switch in kill_switch_map.items():
-        if pattern in endpoint:
-            if not await kill_switch_manager.is_feature_enabled(switch):
-                return JSONResponse(
-                    status_code=503,
-                    content={"error": "Service temporarily unavailable"}
-                )
-    
-    return await call_next(request)
+    # Proceed with registration...
+    return await user_service.create_user(user_data)
 ```
 
-This comprehensive operability guide ensures smooth system operation with proper cost controls, incident response procedures, and emergency controls.
+### **Container Health Monitoring**
+```bash
+#!/bin/bash
+# monitoring/health_check.sh - Current implementation approach
+
+# Check all Docker Compose services
+check_services() {
+    echo "Checking Docker Compose service health..."
+    
+    # Check if all containers are running
+    docker compose ps --format "table" | grep -v "Up" | grep -v "NAME" && {
+        echo "ERROR: Some containers are not running"
+        docker compose ps
+        return 1
+    }
+    
+    # Check API health
+    curl -f http://localhost:8000/health || {
+        echo "ERROR: API health check failed"
+        return 1
+    }
+    
+    # Check Ollama AI service
+    curl -f http://localhost:11434/api/tags || {
+        echo "ERROR: AI service health check failed"
+        return 1
+    }
+    
+    # Check PostgreSQL
+    docker compose exec -T postgres pg_isready -U petuser || {
+        echo "ERROR: Database health check failed" 
+        return 1
+    }
+    
+    # Check Redis
+    docker compose exec -T redis redis-cli ping | grep -q "PONG" || {
+        echo "ERROR: Redis health check failed"
+        return 1
+    }
+    
+    echo "All services healthy"
+    return 0
+}
+
+# Auto-restart unhealthy services
+auto_recovery() {
+    if ! check_services; then
+        echo "Attempting automatic service recovery..."
+        
+        # Restart all services
+        docker compose restart
+        
+        # Wait for services to start
+        sleep 30
+        
+        # Re-check health
+        if check_services; then
+            echo "Auto-recovery successful"
+        else
+            echo "Auto-recovery failed - manual intervention required"
+            # Send alert (email, Slack, etc.)
+        fi
+    fi
+}
+
+# Run health check
+check_services
+```
+
+This comprehensive operability guide now reflects the current Docker Compose implementation with realistic cost models, operational procedures, and monitoring approaches suitable for the current deployment architecture.

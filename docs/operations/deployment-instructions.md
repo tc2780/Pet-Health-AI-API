@@ -1,20 +1,49 @@
 # Deployment Instructions
 
+*Last Updated: December 5, 2025*
+
+**Current Implementation:** Docker Compose with FastAPI, PostgreSQL, Redis, and Ollama llama3.2:3b
+
+**Related Documents:**
+- [Cost & Operability Guide](./cost-operability.md) - Cost analysis and operational procedures
+- [Trust Model](../compliance/trust-model.md) - Security considerations and threat model
+
 ## Prerequisites
 
-### **System Requirements**
-- Docker Desktop 4.0+ (for development)
-- 8GB+ RAM (for local AI processing)
-- 50GB+ free disk space
-- Python 3.11+
-- Git
+### **System Requirements (Updated Dec 2025)**
+- Docker Desktop 4.20+ with Docker Compose V2
+- 8GB+ RAM (4GB for Ollama llama3.2:3b, 4GB for other services)
+- 20GB+ free disk space (2GB for AI model, 18GB for containers and data)
+- Git 2.30+
+- Internet connection for initial model download
 
-### **Account Setup**
-```bash
-# Required for production deployment
-- GitHub account (source code hosting)
-- Railway/DigitalOcean/AWS account (hosting)
-- Domain name (optional, for custom URLs)
+### **Hardware Recommendations**
+```yaml
+Development (Local):
+  - CPU: 4+ cores (for AI processing)
+  - RAM: 8GB minimum, 16GB recommended
+  - Storage: 20GB available space
+  - OS: macOS, Linux, or Windows with WSL2
+
+Production (VPS/Cloud):
+  - CPU: 2+ cores minimum, 4+ cores recommended
+  - RAM: 4GB minimum, 8GB recommended  
+  - Storage: 50GB+ SSD storage
+  - Network: 1Gbps connection recommended
+```
+
+### **Account Setup (For Production)**
+```yaml
+Required Services:
+  - GitHub: Source code hosting (free for public repos)
+  - VPS Provider: DigitalOcean, Linode, or AWS EC2 ($20-40/month)
+  - Domain Registrar: Namecheap, Cloudflare, etc. ($10-15/year)
+  - SSL Certificate: Let's Encrypt (free) or Cloudflare (free)
+
+Optional Services:
+  - Monitoring: Grafana Cloud (free tier) or self-hosted
+  - Backup Storage: AWS S3, Backblaze B2 ($5/month)
+  - CDN: Cloudflare (free) or AWS CloudFront
 ```
 
 ## Local Development Setup
@@ -22,305 +51,618 @@
 ### **1. Clone and Setup Repository**
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pet-health-api
-cd pet-health-api
+git clone https://github.com/tracychow/cpsc-436c/capstone-final-project
+cd capstone-final-project
 
-# Create environment file
-cp .env.example .env
+# Verify Docker Compose installation
+docker compose version
 
-# Edit .env with your settings
-nano .env
+# Check system resources
+docker system info | grep -E 'CPUs|Total Memory'
 ```
 
 ### **2. Environment Configuration**
 ```bash
-# .env file contents
-DATABASE_URL=postgresql://petuser:petpass@localhost:5432/petdb
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-super-secure-jwt-secret-key-here
-ENVIRONMENT=development
-DEBUG=true
-LOG_LEVEL=INFO
+# The repository already includes a working docker-compose.yml
+# No additional environment files needed for basic development
 
-# AI Service Configuration
-AI_PROVIDER=ollama  # or "openai" for OpenAI API
-OLLAMA_BASE_URL=http://localhost:11434
-OPENAI_API_KEY=sk-your-openai-key-if-using-openai
-
-# Security Settings
-CORS_ORIGINS=http://localhost:3000,http://localhost:8080
-RATE_LIMIT_ENABLED=true
-```
-
-### **3. Docker Development Setup**
-```bash
-# Start all services
-docker-compose up -d
-
-# Verify services are running
-docker-compose ps
-
-# Check logs if needed
-docker-compose logs api
-docker-compose logs postgres
-docker-compose logs redis
-```
-
-### **4. Database Initialization**
-```bash
-# Run database migrations
-docker-compose exec api python -m alembic upgrade head
-
-# Create initial data (optional)
-docker-compose exec api python scripts/seed_data.py
-```
-
-### **5. AI Model Setup**
-```bash
-# Pull Ollama model (for local AI)
-docker-compose exec ollama ollama pull llama3.2:3b
-
-# Test AI service
-curl http://localhost:11434/api/generate \
-  -d '{"model": "llama3.2:3b", "prompt": "Hello, world!", "stream": false}'
-```
-
-### **5. Validate Installation**
-
-Run comprehensive tests to ensure everything is working:
-
-```bash
-# Run complete test suite (recommended)
-./run-docker-tests.sh all
-
-# Run specific test categories
-./run-docker-tests.sh standard      # Unit, integration, AI, compliance tests
-./run-docker-tests.sh performance   # Load and performance testing
-
-# Quick validation tests
-docker compose exec api python -m pytest tests/integration/test_health_and_general.py -v
-docker compose exec api python -m pytest tests/integration/test_auth.py -v
-
-# Test results
-# ✅ Standard tests: 166/171 passing (97% success rate)
-# ✅ Performance tests: 7/9 passing (load testing functional)
-# ✅ Full test coverage: 171 comprehensive tests
-```
-
-### **6. Development Workflow**
-
-```bash
-# Daily development testing
-./run-docker-tests.sh standard
-
-# Before committing changes
-./run-docker-tests.sh all
-
-# Monitor application logs
-docker compose logs -f api
-```
-
-## Production Deployment Options
-
-### **Option 1: Railway (Recommended for MVP)**
-
-#### **Step 1: Prepare Application**
-```bash
-# Ensure Dockerfile is optimized for Railway
-cat > Dockerfile << 'EOF'
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app
-RUN chown -R app:app /app
-USER app
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
-
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "$PORT"]
+# Optional: Create custom environment overrides
+cat > docker-compose.override.yml << 'EOF'
+version: '3.8'
+services:
+  api:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+  postgres:
+    ports:
+      - "5432:5432"  # Expose PostgreSQL for external tools
+  redis:
+    ports:
+      - "6379:6379"  # Expose Redis for external tools
 EOF
 ```
 
-#### **Step 2: Railway Deployment**
+### **3. Docker Compose Startup**
 ```bash
-# Install Railway CLI
-npm install -g @railway/cli
+# Start all services (API, PostgreSQL, Redis, Ollama)
+docker compose up -d
 
-# Login to Railway
-railway login
+# Verify all services are running
+docker compose ps
 
-# Initialize project
-railway init
+# Expected output:
+# NAME                                    IMAGE               STATUS
+# capstone-final-project-api-1           backend_api         Up
+# capstone-final-project-postgres-1      postgres:15         Up  
+# capstone-final-project-redis-1         redis:7-alpine      Up
+# capstone-final-project-ollama-1        ollama/ollama       Up
 
-# Add environment variables
-railway variables set DATABASE_URL=$DATABASE_URL
-railway variables set REDIS_URL=$REDIS_URL
-railway variables set JWT_SECRET=$JWT_SECRET
-
-# Deploy application
-railway up
+# Check service health
+curl http://localhost:8000/health
+# Expected: {"status": "healthy", "database": "connected", "redis": "connected"}
 ```
 
-#### **Step 3: Database Setup on Railway**
+### **4. AI Model Setup (Critical Step)**
 ```bash
-# Add PostgreSQL service
-railway add postgresql
+# Download the llama3.2:3b model (this will take a few minutes)
+docker compose exec ollama ollama pull llama3.2:3b
 
-# Add Redis service  
-railway add redis
+# Verify model is available
+docker compose exec ollama ollama list
+# Expected output showing llama3.2:3b model
 
-# Run migrations
-railway run python -m alembic upgrade head
+# Alternative: Use faster but less accurate model for development
+docker compose exec ollama ollama pull llama3.2:1b
+
+# Test AI service directly
+curl http://localhost:11434/api/tags
+# Expected: JSON response with available models
 ```
 
-### **Option 2: DigitalOcean App Platform**
-
-#### **Step 1: Create App Spec**
-```yaml
-# .do/app.yaml
-name: pet-health-api
-services:
-- name: api
-  source_dir: /
-  github:
-    repo: yourusername/pet-health-api
-    branch: main
-  run_command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
-  environment_slug: python
-  instance_count: 1
-  instance_size_slug: basic-xxs
-  envs:
-  - key: DATABASE_URL
-    scope: RUN_TIME
-    type: SECRET
-  - key: REDIS_URL  
-    scope: RUN_TIME
-    type: SECRET
-  - key: JWT_SECRET
-    scope: RUN_TIME
-    type: SECRET
-  routes:
-  - path: /
-databases:
-- engine: PG
-  name: petdb
-  num_nodes: 1
-  size: db-s-1vcpu-1gb
-  version: "14"
-```
-
-#### **Step 2: Deploy to DigitalOcean**
+### **5. Database Initialization**
 ```bash
-# Install doctl CLI
-brew install doctl  # macOS
+# Database is automatically initialized via Docker
+# Check database connectivity
+docker compose exec postgres psql -U petuser -d petdb -c "SELECT version();"
 
-# Authenticate
-doctl auth init
-
-# Create app
-doctl apps create .do/app.yaml
-
-# Check deployment status
-doctl apps list
+# View database tables (should show pets, symptoms, users, etc.)
+docker compose exec postgres psql -U petuser -d petdb -c "\dt"
 ```
 
-### **Option 3: Self-Hosted (VPS)**
+### **6. Validate Installation**
+
+#### **Quick Health Check**
+```bash
+# API health endpoint
+curl http://localhost:8000/health
+# Expected: {"status": "healthy", "database": "connected", "redis": "connected"}
+
+# API documentation
+curl http://localhost:8000/docs
+# Expected: OpenAPI/Swagger documentation page
+
+# Test AI service integration
+docker compose exec api python demo_scripts/ollama_direct_test.py
+# Expected: ✅ AI connectivity test passing
+```
+
+#### **Run Demo Scripts**
+```bash
+# Interactive demo launcher
+docker compose exec api python demo_scripts/run_demo.py
+
+# Menu options:
+# 1. 🔌 Ollama Connectivity Test (~5 seconds)
+# 2. 🏥 AI Veterinary Analysis Demo (~30-60 seconds)  
+# 3. 🔧 Service Integration Test (~20-40 seconds)
+# 4. 🔄 End-to-End Workflow Test (~10-20 seconds)
+
+# Quick validation: Run option 1 to verify AI is working
+```
+
+#### **Comprehensive Testing**
+```bash
+# Navigate to backend directory
+cd backend
+
+# Run core integration tests
+docker compose exec api python -m pytest tests/integration/test_health_and_general.py -v
+# Expected: All health and API endpoint tests pass
+
+# Run authentication tests  
+docker compose exec api python -m pytest tests/integration/test_auth.py -v
+# Expected: User registration, login, JWT validation pass
+
+# Run AI integration tests
+docker compose exec api python -m pytest tests/ai/test_ollama_integration.py -v
+# Expected: AI service connectivity and response validation pass
+
+# Run compliance tests
+docker compose exec api python -m pytest tests/clause_control_tests/ -v
+# Expected: All privacy and ethics compliance tests pass
+```
+
+### **7. Development Workflow**
+
+```bash
+# Monitor all service logs
+docker compose logs -f
+
+# Monitor specific service
+docker compose logs -f api
+docker compose logs -f ollama
+
+# Restart services after code changes
+docker compose restart api
+
+# Rebuild containers after dependency changes
+docker compose build api
+docker compose up -d api
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (full reset)
+docker compose down -v
+```
+
+## **6. Monitoring and Maintenance**
+
+### **Health Checks**
+```bash
+# Container health
+docker compose ps
+docker compose logs api
+
+# Database connectivity  
+docker compose exec postgres pg_isready -U petuser
+
+# API health
+curl http://localhost:8000/health
+
+# Redis connectivity
+docker compose exec redis redis-cli ping
+
+# Ollama model status
+docker compose exec ollama ollama list
+```
+
+### **Log Management**
+```bash
+# View logs
+docker compose logs -f api
+docker compose logs --tail=100 postgres
+docker compose logs ollama
+
+# Log rotation (production)
+cat > /etc/logrotate.d/docker-compose << 'EOF'
+/var/lib/docker/containers/*/*-json.log {
+    rotate 7
+    daily
+    compress
+    size=1M
+    missingok
+    delaycompress
+    copytruncate
+}
+EOF
+```
+
+### **Performance Monitoring**
+```bash
+# Check system resources
+docker stats
+
+# Monitor AI model performance
+curl -X POST http://localhost:8000/api/v1/ai/test \
+  -H "Content-Type: application/json" \
+  -d '{"pet_id": "test-123"}'
+
+# Database performance
+docker compose exec postgres psql -U petuser -d petdb -c "
+SELECT schemaname,tablename,n_tup_ins,n_tup_upd,n_tup_del 
+FROM pg_stat_user_tables;"
+```
+
+### **8. Troubleshooting Common Issues**
+
+#### **Ollama Model Not Loading**
+```bash
+# Check Ollama service status
+docker compose ps ollama
+
+# Check Ollama logs
+docker compose logs ollama
+
+# Manually pull model if missing
+docker compose exec ollama ollama pull llama3.2:3b
+
+# Verify model is available
+docker compose exec ollama ollama list
+
+# Test AI functionality
+curl -X POST http://localhost:8000/api/v1/ai/test \
+  -H "Content-Type: application/json" \
+  -d '{"pet_id": "test-123"}'
+```
+
+#### **Database Connection Issues**
+```bash
+# Check PostgreSQL status
+docker compose ps postgres
+
+# Test database connectivity
+docker compose exec postgres pg_isready -U petuser
+
+# Check database logs
+docker compose logs postgres
+
+# Reset database if needed
+docker compose down
+docker volume rm capstone-final-project_postgres_data
+docker compose up -d
+
+# Verify tables exist
+docker compose exec postgres psql -U petuser -d petdb -c "\dt"
+```
+
+#### **API Service Not Responding**
+```bash
+# Check API container status
+docker compose ps api
+
+# Check API logs for errors
+docker compose logs api --tail=50
+
+# Test API endpoints
+curl http://localhost:8000/health
+curl http://localhost:8000/docs
+
+# Restart API service
+docker compose restart api
+
+# Rebuild if needed
+docker compose build api --no-cache
+```
+
+#### **Redis Connection Issues**
+```bash
+# Check Redis status
+docker compose ps redis
+
+# Test Redis connectivity
+docker compose exec redis redis-cli ping
+
+# Check Redis logs
+docker compose logs redis
+
+# Restart Redis if needed
+docker compose restart redis
+```
+
+#### **Port Already in Use**
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Stop conflicting services
+sudo kill -9 $(lsof -t -i:8000)
+
+# Or use different port
+PORT=8001 docker compose up -d
+```
+
+### **9. Data Backup and Recovery**
+
+#### **Database Backup**
+```bash
+# Create backup
+docker compose exec postgres pg_dump -U petuser petdb > backup_$(date +%Y%m%d).sql
+
+# Restore from backup
+docker compose exec -T postgres psql -U petuser petdb < backup_20231201.sql
+```
+
+#### **Volume Backup**
+```bash
+# Backup all volumes
+docker run --rm \
+  -v capstone-final-project_postgres_data:/data \
+  -v $(pwd):/backup \
+  alpine tar czf /backup/postgres_backup_$(date +%Y%m%d).tar.gz /data
+
+# Restore volume
+docker volume create capstone-final-project_postgres_data
+docker run --rm \
+  -v capstone-final-project_postgres_data:/data \
+  -v $(pwd):/backup \
+  alpine tar xzf /backup/postgres_backup_20231201.tar.gz -C /
+```
+
+## **7. Production Considerations**
+
+### **Security Checklist**
+- [ ] Change default database passwords
+- [ ] Generate secure JWT secret (min 32 chars)
+- [ ] Enable HTTPS with SSL certificates
+- [ ] Configure firewall rules
+- [ ] Set up log monitoring
+- [ ] Regular security updates
+
+### **Performance Optimization**
+- [ ] Ollama model optimization for production
+- [ ] Database connection pooling
+- [ ] Redis caching configuration
+- [ ] Load balancing for multiple instances
+- [ ] Resource monitoring and alerts
+
+### **High Availability Setup**
+```bash
+# Multiple API instances
+docker compose up -d --scale api=3
+
+# Load balancer configuration (nginx)
+upstream pet_api {
+    server localhost:8001;
+    server localhost:8002;
+    server localhost:8003;
+}
+```
+
+# Restart API service
+docker compose restart api
+
+# Rebuild if code changes
+docker compose build api
+docker compose up -d api
+```
+
+## Production Deployment
+
+### **Recommended: VPS with Docker Compose**
 
 #### **Step 1: Server Setup**
 ```bash
-# Connect to your VPS
+# Choose a VPS provider (recommended specs for production):
+# - DigitalOcean: $20/month droplet (2 CPU, 4GB RAM, 80GB SSD)
+# - Linode: $24/month (2 CPU, 4GB RAM, 80GB SSD)
+# - Vultr: $20/month (2 CPU, 4GB RAM, 80GB SSD)
+
+# Connect to your server
 ssh root@your-server-ip
 
-# Update system
+# Update system packages
 apt update && apt upgrade -y
 
-# Install Docker
+# Install Docker and Docker Compose
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
 
-# Install Docker Compose
-pip3 install docker-compose
+# Install Docker Compose (if not included)
+apt install docker-compose-plugin
 
 # Create application user
-useradd -m -s /bin/bash petapp
-usermod -aG docker petapp
-su - petapp
+useradd -m -s /bin/bash petapi
+usermod -aG docker petapi
+
+# Setup firewall
+ufw allow ssh
+ufw allow 80
+ufw allow 443
+ufw --force enable
 ```
 
 #### **Step 2: Application Deployment**
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/pet-health-api
-cd pet-health-api
+# Switch to application user
+su - petapi
 
-# Create production environment file
-cat > .env.production << 'EOF'
-DATABASE_URL=postgresql://petuser:SECURE_PASSWORD@postgres:5432/petdb
-REDIS_URL=redis://redis:6379
-JWT_SECRET=VERY_SECURE_RANDOM_STRING
-ENVIRONMENT=production
-DEBUG=false
-LOG_LEVEL=WARNING
-CORS_ORIGINS=https://yourdomain.com
+# Clone repository
+git clone https://github.com/yourusername/capstone-final-project
+cd capstone-final-project
+
+# Create production compose file
+cat > docker-compose.prod.yml << 'EOF'
+version: '3.8'
+
+services:
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://petuser:${DB_PASSWORD}@postgres:5432/petdb
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+    depends_on:
+      - postgres
+      - redis
+      - ollama
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=petdb
+      - POSTGRES_USER=petuser
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+
+networks:
+  app-network:
+    driver: bridge
 EOF
 
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
+# Create secure environment file
+cat > .env.production << 'EOF'
+DB_PASSWORD=$(openssl rand -hex 32)
+JWT_SECRET=$(openssl rand -hex 64)
+EOF
+
+# Source environment variables
+source .env.production
 ```
 
-#### **Step 3: Nginx Reverse Proxy**
+#### **Step 3: Nginx Configuration**
 ```bash
-# Install Nginx
-sudo apt install nginx
+# Create nginx configuration
+cat > nginx.conf << 'EOF'
+events {
+    worker_connections 1024;
+}
 
-# Create Nginx config
-sudo cat > /etc/nginx/sites-available/pet-health-api << 'EOF'
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+http {
+    upstream api {
+        server api:8000;
+    }
+
+    server {
+        listen 80;
+        server_name yourdomain.com;
+
+        # Redirect HTTP to HTTPS
+        return 301 https://$server_name$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name yourdomain.com;
+
+        ssl_certificate /etc/nginx/ssl/fullchain.pem;
+        ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+        location / {
+            proxy_pass http://api;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /health {
+            proxy_pass http://api;
+            access_log off;
+        }
     }
 }
 EOF
-
-# Enable site
-sudo ln -s /etc/nginx/sites-available/pet-health-api /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
 ```
 
-#### **Step 4: SSL Setup with Let's Encrypt**
+#### **Step 4: SSL Certificate Setup**
 ```bash
 # Install certbot
-sudo apt install certbot python3-certbot-nginx
+apt install certbot
+
+# Temporarily start nginx for domain verification
+docker compose -f docker-compose.prod.yml up nginx -d
 
 # Get SSL certificate
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+certbot certonly --webroot -w /var/lib/letsencrypt/ -d yourdomain.com
 
-# Verify auto-renewal
-sudo certbot renew --dry-run
+# Copy certificates to nginx volume
+mkdir -p ssl
+cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ssl/
+cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ssl/
+
+# Setup automatic renewal
+echo "0 12 * * * /usr/bin/certbot renew --quiet" | crontab -
+```
+
+#### **Step 5: Deploy Application**
+```bash
+# Start all services
+docker compose -f docker-compose.prod.yml up -d
+
+# Verify services are running
+docker compose -f docker-compose.prod.yml ps
+
+# Download AI model
+docker compose -f docker-compose.prod.yml exec ollama ollama pull llama3.2:3b
+
+# Test deployment
+curl https://yourdomain.com/health
+```
+
+### **Alternative: Docker Hub + Cloud Deploy**
+
+#### **For Cloud Platforms (Railway, Heroku, etc.)**
+```bash
+# Build and push Docker image
+docker build -t yourusername/pet-health-api:latest ./backend
+docker push yourusername/pet-health-api:latest
+
+# Note: Cloud platforms may not support Ollama due to resource constraints
+# Consider using OpenAI API for cloud deployments:
+
+# Add to environment variables:
+# AI_PROVIDER=openai
+# OPENAI_API_KEY=your-openai-key
+# OLLAMA_BASE_URL=  # Leave empty for OpenAI mode
+```
+
+#### **Simplified Cloud Deployment**
+```yaml
+# For platforms that support Docker Compose (some VPS providers)
+# Use this simplified compose file:
+
+version: '3.8'
+services:
+  app:
+    image: yourusername/pet-health-api:latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}  
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_PROVIDER=openai
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
 ```
 
 ## Database Migration Guide
