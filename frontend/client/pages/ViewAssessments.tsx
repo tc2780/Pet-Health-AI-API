@@ -145,6 +145,19 @@ export default function ViewAssessments() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Disclaimer */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-900">
+                  Medical Disclaimer
+                </p>
+                <p className="text-sm text-amber-800 mt-1">
+                  This is AI-generated information for reference only. Always consult with a veterinarian for proper diagnosis and treatment.
+                </p>
+              </div>
+            </div>
+
             {assessments.map((assessment) => (
               <div
                 key={assessment.id}

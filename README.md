@@ -150,6 +150,43 @@ docker compose down
 docker compose down -v
 ```
 
+## 🎭 Live Demo Experience
+
+### Interactive Features
+
+1. **Immediate AI Response**: The application uses a local AI model that provides instant feedback
+2. **Real-Time Symptom Tracking**: Add multiple symptoms and see how AI assessment updates
+3. **Progressive Disclosure**: Start with basic pet info, add symptoms, get detailed AI analysis
+4. **Privacy First**: All AI processing happens locally - no data sent to external services
+
+### Demo Workflow
+
+1. **User Registration** → Create account with email/password
+2. **Pet Profile Creation** → Add pet details (name, species, breed, age)
+3. **Symptom Documentation** → Record observed symptoms with descriptions
+4. **AI Assessment** → Get instant analysis with urgency levels and recommendations
+5. **Historical Tracking** → View past assessments and symptom progression
+
+### Expected AI Response Format
+
+```json
+{
+  "urgency_level": "moderate",
+  "analysis": "Based on the reported symptoms of lethargy and decreased appetite in a 3-year-old Golden Retriever, several potential causes should be considered...",
+  "recommendations": [
+    "Monitor temperature and hydration",
+    "Provide easily digestible food",
+    "Consult veterinarian if symptoms persist beyond 24 hours"
+  ],
+  "possible_causes": [
+    "Minor gastrointestinal upset",
+    "Stress or environmental changes",
+    "Early signs of infection"
+  ],
+  "medical_disclaimer": "This assessment is for informational purposes only and does not replace professional veterinary care."
+}
+```
+
 ## 🏗️ System Architecture
 
 ### Core Services
@@ -240,43 +277,6 @@ open http://localhost:9090  # Prometheus
 }
 ```
 
-## 🎭 Live Demo Experience
-
-### Interactive Features
-
-1. **Immediate AI Response**: The application uses a local AI model that provides instant feedback
-2. **Real-Time Symptom Tracking**: Add multiple symptoms and see how AI assessment updates
-3. **Progressive Disclosure**: Start with basic pet info, add symptoms, get detailed AI analysis
-4. **Privacy First**: All AI processing happens locally - no data sent to external services
-
-### Demo Workflow
-
-1. **User Registration** → Create account with email/password
-2. **Pet Profile Creation** → Add pet details (name, species, breed, age)
-3. **Symptom Documentation** → Record observed symptoms with descriptions
-4. **AI Assessment** → Get instant analysis with urgency levels and recommendations
-5. **Historical Tracking** → View past assessments and symptom progression
-
-### Expected AI Response Format
-
-```json
-{
-  "urgency_level": "moderate",
-  "analysis": "Based on the reported symptoms of lethargy and decreased appetite in a 3-year-old Golden Retriever, several potential causes should be considered...",
-  "recommendations": [
-    "Monitor temperature and hydration",
-    "Provide easily digestible food",
-    "Consult veterinarian if symptoms persist beyond 24 hours"
-  ],
-  "possible_causes": [
-    "Minor gastrointestinal upset",
-    "Stress or environmental changes",
-    "Early signs of infection"
-  ],
-  "medical_disclaimer": "This assessment is for informational purposes only and does not replace professional veterinary care."
-}
-```
-
 ## 🏥 Veterinary Integration (Mock)
 
 This project includes a mock vet clinic sync service and API endpoints to demonstrate how pet data can be synchronized with external veterinary partners:
@@ -291,9 +291,7 @@ When running with `docker compose`, the `api` service exposes `VET_SYNC_MOCK=tru
 ### Architecture Documentation
 - **[Architecture Overview](docs/system-design/architecture/architecture_diagram.md)**: Complete system architecture with service interactions
 - **[API Schema Documentation](docs/system-design/architecture/api-schema-docs.md)**: Detailed API specifications and data models
-- **[ADR 001](docs/system-design/adrs/ADR-001-fastapi-framework.md)**: FastAPI framework selection rationale
-- **[ADR 002](docs/system-design/adrs/ADR-002-local-llm-choice.md)**: Local LLM implementation decision
-- **[ADR 003](docs/system-design/adrs/ADR-003-postgresql-database.md)**: PostgreSQL database choice
+- **[Architecture Decision Records (ADRs)](docs/system-design/adrs)**: Collection of project design decisions and rationale (framework, local LLM, database, frontend, etc.).
 
 ### Compliance & Ethics Framework
 - **[Ethics Framework](docs/compliance/ethics-framework.md)**: AI ethics guidelines and implementation
