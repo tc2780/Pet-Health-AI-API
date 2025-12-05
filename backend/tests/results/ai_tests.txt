@@ -1,0 +1,36 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-7.4.3, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-3.7.1, asyncio-0.21.1
+asyncio: mode=Mode.AUTO
+collecting ... collected 19 items
+
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_ollama_api_connectivity PASSED [  5%]
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_ollama_veterinary_analysis SKIPPED [ 10%]
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_urgency_assessment_accuracy[urgency_case0] PASSED [ 15%]
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_urgency_assessment_accuracy[urgency_case1] PASSED [ 21%]
+tests/ai/test_ollama_integration.py::TestOllamaIntegration::test_urgency_assessment_accuracy[urgency_case2] SKIPPED [ 26%]
+tests/ai/test_ollama_integration.py::TestOllamaServiceIntegration::test_ollama_service_fallback PASSED [ 31%]
+tests/ai/test_ollama_integration.py::TestOllamaServiceIntegration::test_response_parsing_robustness PASSED [ 36%]
+tests/ai/test_performance.py::TestAIPerformance::test_ai_response_time_benchmark PASSED [ 42%]
+tests/ai/test_performance.py::TestAIPerformance::test_concurrent_analysis_performance PASSED [ 47%]
+tests/ai/test_performance.py::TestAIPerformance::test_memory_usage_stability PASSED [ 52%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_ai_analysis_success PASSED [ 57%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_ai_analysis_fallback PASSED [ 63%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_ai_response_parsing_robust PASSED [ 68%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_urgency_level_validation PASSED [ 73%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_emergency_symptom_detection PASSED [ 78%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_timeout_handling[connection_timeout] PASSED [ 84%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_timeout_handling[read_timeout] PASSED [ 89%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_timeout_handling[general_timeout] PASSED [ 94%]
+tests/ai/test_symptom_analysis.py::TestAISymptomAnalysis::test_prompt_construction PASSED [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] tests/ai/test_ollama_integration.py:136: AI returned non-JSON response: {
+  "urgency_level": "high",
+  "analysis": "{\"Lethargy\": \"The dog's lethargy is likely due to a d
+SKIPPED [1] tests/ai/test_ollama_integration.py:246: Urgency assessment test failed: Expected ['medium', 'low'], got high
+assert 'high' in ['medium', 'low']
+======================== 17 passed, 2 skipped in 58.68s ========================

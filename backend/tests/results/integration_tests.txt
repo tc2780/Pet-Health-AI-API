@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-7.4.3, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-3.7.1, asyncio-0.21.1
+asyncio: mode=Mode.AUTO
+collecting ... collected 18 items
+
+tests/integration/test_auth.py::TestAuthAPIIntegration::test_register_login_flow_integration PASSED [  5%]
+tests/integration/test_auth.py::TestAuthAPIIntegration::test_duplicate_user_database_constraint PASSED [ 11%]
+tests/integration/test_auth.py::TestAuthAPIIntegration::test_authentication_middleware_integration PASSED [ 16%]
+tests/integration/test_auth.py::TestAuthAPIIntegration::test_token_validation_across_services PASSED [ 22%]
+tests/integration/test_health_and_general.py::TestHealthEndpoints::test_root_endpoint PASSED [ 27%]
+tests/integration/test_health_and_general.py::TestHealthEndpoints::test_health_check PASSED [ 33%]
+tests/integration/test_health_and_general.py::TestHealthEndpoints::test_openapi_integration PASSED [ 38%]
+tests/integration/test_health_and_general.py::TestAPIIntegration::test_invalid_endpoint_404 PASSED [ 44%]
+tests/integration/test_health_and_general.py::TestAPIIntegration::test_cors_and_headers_integration PASSED [ 50%]
+tests/integration/test_health_and_general.py::TestAPIIntegration::test_concurrent_authenticated_requests PASSED [ 55%]
+tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_crud_database_persistence PASSED [ 61%]
+tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_user_ownership_enforcement PASSED [ 66%]
+tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_data_relationships_integration PASSED [ 72%]
+tests/integration/test_pets.py::TestPetAPIIntegration::test_pet_sync_vet_clinic_integration PASSED [ 77%]
+tests/integration/test_users.py::TestUserAPIIntegration::test_user_update_database_persistence PASSED [ 83%]
+tests/integration/test_users.py::TestUserAPIIntegration::test_user_deletion_cascade_with_pets PASSED [ 88%]
+tests/integration/test_users.py::TestUserAPIIntegration::test_user_data_isolation_across_sessions PASSED [ 94%]
+tests/integration/test_users.py::TestUserAPIIntegration::test_unique_constraint_enforcement PASSED [100%]
+
+============================== 18 passed in 8.10s ==============================

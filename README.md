@@ -57,6 +57,31 @@ A comprehensive pet health management system featuring local AI-powered symptom 
    - ❤️ **Health Check**: http://localhost:8000/health
    - 🌐 **API Base URL**: http://localhost:8000/api/v1/
 
+### Frontend Setup (Demonstration in Action)
+
+The project includes a React-based frontend for interactive pet health management:
+
+1. **Navigate to frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pnpm install
+   ```
+
+3. **Start development server**:
+   ```bash
+   pnpm dev
+   ```
+
+4. **Access the frontend**:
+   - 🌐 **Frontend Application**: http://localhost:8080
+   - The frontend automatically connects to the backend API at http://localhost:8000
+        - Please make sure the backend is running before using the frontend.
+   - Use the interactive UI to register, add pets, log symptoms, and get AI assessments.
+
 ### 🎮 Simple Interactive Demo
 
 Run comprehensive demo scripts to test all functionality:
