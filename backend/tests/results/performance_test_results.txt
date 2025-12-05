@@ -1,0 +1,77 @@
+Performance tests result output. Captured Dec 5
+
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-7.4.3, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-3.7.1, asyncio-0.21.1
+asyncio: mode=Mode.AUTO
+collecting ... collected 9 items
+
+tests/performance/test_load_testing.py::TestPerformanceBaseline::test_health_endpoint_baseline 
+🎯 Health Endpoint Baseline: {'total_requests': 100, 'success_count': 100, 'error_count': 0, 'error_rate_percent': 0.0, 'success_rate_percent': 100.0, 'avg_response_time_ms': 0.48, 'p95_response_time_ms': 0.77, 'max_response_time_ms': 3.94, 'min_response_time_ms': 0.28, 'requests_per_second': 0.0, 'test_duration_seconds': 0}
+PASSED
+tests/performance/test_load_testing.py::TestPerformanceBaseline::test_authenticated_endpoints_baseline 
+🔐 Auth Endpoints Baseline: {'total_requests': 50, 'success_count': 50, 'error_count': 0, 'error_rate_percent': 0.0, 'success_rate_percent': 100.0, 'avg_response_time_ms': 1.22, 'p95_response_time_ms': 1.57, 'max_response_time_ms': 2.04, 'min_response_time_ms': 1.02, 'requests_per_second': 0.0, 'test_duration_seconds': 0}
+PASSED
+tests/performance/test_load_testing.py::TestPerformanceBaseline::test_pet_operations_baseline 
+🐕 Pet Operations Baseline: {'total_requests': 40, 'success_count': 40, 'error_count': 0, 'error_rate_percent': 0.0, 'success_rate_percent': 100.0, 'avg_response_time_ms': 1.7, 'p95_response_time_ms': 3.49, 'max_response_time_ms': 3.54, 'min_response_time_ms': 1.25, 'requests_per_second': 0.0, 'test_duration_seconds': 0}
+PASSED
+tests/performance/test_load_testing.py::TestLoadTesting::test_concurrent_users_load[5-30] 
+🚀 Starting load test: 5 users for 30s
+
+📊 Load Test Results (5 users):
+   Total Requests: 95
+   Success Rate: 89.47%
+   Error Rate: 10.53%
+   Avg Response Time: 5.76ms
+   P95 Response Time: 16.68ms
+   Requests/Second: 2.53
+PASSED
+tests/performance/test_load_testing.py::TestLoadTesting::test_concurrent_users_load[10-60] 
+🚀 Starting load test: 10 users for 60s
+
+📊 Load Test Results (10 users):
+   Total Requests: 316
+   Success Rate: 88.61%
+   Error Rate: 11.39%
+   Avg Response Time: 4.41ms
+   P95 Response Time: 12.56ms
+   Requests/Second: 4.71
+PASSED
+tests/performance/test_load_testing.py::TestLoadTesting::test_concurrent_users_load[25-120] 
+🚀 Starting load test: 25 users for 120s
+
+📊 Load Test Results (25 users):
+   Total Requests: 1435
+   Success Rate: 89.48%
+   Error Rate: 10.52%
+   Avg Response Time: 3.0ms
+   P95 Response Time: 10.07ms
+   Requests/Second: 10.52
+PASSED
+tests/performance/test_load_testing.py::TestStressTesting::test_stress_50_users 
+🔥 Stress test: 50 users for 3 minutes
+
+⚡ Stress Test Results (50 users):
+   Total Requests: 4162
+   Success Rate: 89.93%
+   Error Rate: 10.07%
+   Avg Response Time: 1.92ms
+   P95 Response Time: 4.37ms
+   Requests/Second: 20.66
+PASSED
+tests/performance/test_load_testing.py::TestAIPerformance::test_ai_processing_baseline 
+🤖 AI Performance Baseline: {'total_requests': 3, 'success_count': 3, 'error_count': 0, 'error_rate_percent': 0.0, 'success_rate_percent': 100.0, 'avg_response_time_ms': 25.0, 'p95_response_time_ms': 51.91, 'max_response_time_ms': 39.05, 'min_response_time_ms': 12.99, 'requests_per_second': 0.0, 'test_duration_seconds': 0}
+PASSED
+tests/performance/test_load_testing.py::TestAIPerformance::test_concurrent_ai_requests 
+🤖 Testing concurrent AI requests
+   Total AI Requests: 5
+   Successful: 5
+   Success Rate: 100.0%
+   Avg Response Time: 0.01s
+   Max Response Time: 0.03s
+PASSED
+
+======================== 9 passed in 461.49s (0:07:41) =========================
