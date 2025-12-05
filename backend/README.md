@@ -301,7 +301,7 @@ curl -X POST "http://localhost:8000/api/v1/pets/sync-all" \
   "recommendations": "Monitor symptoms for 24-48 hours; Schedule routine veterinary appointment if symptoms persist; Ensure pet is comfortable and well-hydrated",
   "possible_causes": ["dietary indiscretion", "stress", "minor illness"],
   "ai_provider": "ollama",
-  "processing_time_ms": 145,
+  "processing_time_ms": 24500,
   "created_at": "2025-11-30T09:00:00Z"
 }
 ```

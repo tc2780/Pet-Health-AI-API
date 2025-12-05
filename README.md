@@ -188,7 +188,7 @@ open http://localhost:9090  # Prometheus
 ### Model Specifications
 - **Model**: Meta Llama 3.2 3B Instruct
 - **Local Processing**: Complete privacy - no data leaves your system
-- **Response Time**: 2-4 seconds for full assessment
+- **Response Time**: 15-45 seconds for full assessment
 - **Medical Disclaimers**: Automatic inclusion in all AI responses
 
 ### Assessment Input
@@ -208,7 +208,7 @@ open http://localhost:9090  # Prometheus
   "possible_causes": ["cause1", "cause2"],
   "ai_provider": "ollama",
   "ai_model": "llama3.2:3b",
-  "processing_time_ms": 2450,
+  "processing_time_ms": 24500,
   "created_at": "2025-12-05T15:00:00Z"
 }
 ```

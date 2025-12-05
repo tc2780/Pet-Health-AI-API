@@ -359,7 +359,7 @@ Monitoring Tools Integration:
 ```yaml
 Performance Targets:
   API Response Time: < 200ms for standard endpoints
-  AI Assessment Time: < 5 seconds for complete analysis
+  AI Assessment Time: < 45 seconds for complete analysis
   Database Query Time: < 100ms for common operations
   System Uptime: 99.9% availability target
 
