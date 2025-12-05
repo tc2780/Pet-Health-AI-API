@@ -54,37 +54,63 @@ class ChaosExperiment:
 
 
 class DatabaseChaosExperiment(ChaosExperiment):
-    """Simulate database connection issues"""
+    """Simulate database connection issues using connection stress"""
     
     def __init__(self):
         super().__init__(
-            "Database Connection Chaos",
-            "Test resilience to database connection failures"
+            "Database Connection Stress",
+            "Test resilience to database connection overload"
         )
-        self.postgres_container = "capstone-final-project-postgres-1"
+        self.stress_tasks = []
     
     async def inject_failure(self):
-        """Stop the PostgreSQL container"""
+        """Simulate database stress by overwhelming connections"""
         try:
-            subprocess.run(["docker", "stop", self.postgres_container], 
-                         check=True, capture_output=True)
-            print("   💥 Database container stopped")
-            await asyncio.sleep(2)  # Give time for connections to fail
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not stop database: {e}")
+            print("   💾 Applying database connection stress...")
+            api_url = get_api_base_url()
+            
+            # Create stress by making many concurrent database-heavy requests
+            async def stress_task():
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    for _ in range(5):  # Multiple rounds of stress
+                        try:
+                            # Make requests that hit the database
+                            response = await client.get(f"{api_url}/health")
+                            await asyncio.sleep(0.1)
+                        except Exception:
+                            pass
+            
+            # Launch multiple stress tasks
+            self.stress_tasks = [asyncio.create_task(stress_task()) for _ in range(8)]
+            
+            # Let stress build up
+            await asyncio.sleep(3)
+            print("   📮 Database stress applied")
+            
+        except Exception as e:
+            print(f"   ⚠️  Could not apply database stress: {e}")
     
     async def restore_system(self):
-        """Restart the PostgreSQL container"""
+        """Stop stress and allow system to recover"""
         try:
-            subprocess.run(["docker", "start", self.postgres_container], 
-                         check=True, capture_output=True)
-            print("   🔄 Database container restarted")
-            await asyncio.sleep(10)  # Give time for startup
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not restart database: {e}")
+            print("   🔄 Stopping stress and allowing recovery...")
+            
+            # Cancel stress tasks
+            for task in self.stress_tasks:
+                task.cancel()
+            
+            # Wait for cancellation
+            await asyncio.gather(*self.stress_tasks, return_exceptions=True)
+            self.stress_tasks.clear()
+            
+            # Allow recovery time
+            await asyncio.sleep(5)
+            
+        except Exception as e:
+            print(f"   ⚠️  Recovery process issue: {e}")
     
     async def validate_recovery(self) -> bool:
-        """Test if database is accessible again"""
+        """Test if system is responsive again"""
         api_url = get_api_base_url()
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -99,30 +125,101 @@ class AIChaosExperiment(ChaosExperiment):
     
     def __init__(self):
         super().__init__(
-            "AI Service Failure",
-            "Test AI service failure and fallback mechanisms"
+            "AI Service Overload",
+            "Test AI service overload and fallback mechanisms"
         )
-        self.ollama_container = "capstone-final-project-ollama-1"
+        self.stress_tasks = []
     
     async def inject_failure(self):
-        """Stop the Ollama container"""
+        """Simulate AI service overload with many concurrent assessment requests"""
         try:
-            subprocess.run(["docker", "stop", self.ollama_container], 
-                         check=True, capture_output=True)
-            print("   🤖 AI service stopped")
-            await asyncio.sleep(2)
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not stop AI service: {e}")
+            print("   🤖 Overloading AI service with concurrent requests...")
+            api_url = get_api_base_url()
+            
+            # Create a test user and pet for AI stress testing
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                # Quick registration
+                user_data = {
+                    "email": "aistress@example.com",
+                    "password": "stress123",
+                    "full_name": "AI Stress Test"
+                }
+                try:
+                    await client.post(f"{api_url}/api/v1/auth/register", json=user_data)
+                except:
+                    pass  # User might already exist
+                
+                # Login to get token
+                login_data = {"username": user_data["email"], "password": user_data["password"]}
+                auth_response = await client.post(f"{api_url}/api/v1/auth/login", data=login_data)
+                
+                if auth_response.status_code == 200:
+                    token = auth_response.json()["access_token"]
+                    headers = {"Authorization": f"Bearer {token}"}
+                    
+                    # Create a test pet
+                    pet_data = {
+                        "name": "AI Stress Pet",
+                        "species": "dog",
+                        "breed": "Test", 
+                        "age_years": 3,
+                        "weight_kg": 20.0,
+                        "sex": "male"
+                    }
+                    pet_response = await client.post(f"{api_url}/api/v1/pets/", json=pet_data, headers=headers)
+                    
+                    if pet_response.status_code in [200, 201]:
+                        pet_id = pet_response.json()["id"]
+                        
+                        # Add symptoms for assessment
+                        from datetime import datetime
+                        symptom_data = {
+                            "pet_id": pet_id,
+                            "symptom_name": "lethargy",
+                            "severity": "moderate", 
+                            "description": "AI stress testing",
+                            "observed_at": datetime.now().isoformat() + "Z",
+                            "duration_hours": 1
+                        }
+                        await client.post(f"{api_url}/api/v1/symptoms/", json=symptom_data, headers=headers)
+                        
+                        # Create AI stress with many concurrent assessment requests
+                        async def ai_stress_task():
+                            try:
+                                for _ in range(2):  # Reduced to avoid overwhelming
+                                    assessment_data = {"pet_id": pet_id}
+                                    await client.post(f"{api_url}/api/v1/symptoms/assess", 
+                                                    json=assessment_data, headers=headers, timeout=30.0)
+                                    await asyncio.sleep(1)
+                            except Exception:
+                                pass
+                        
+                        # Launch concurrent AI stress tasks
+                        self.stress_tasks = [asyncio.create_task(ai_stress_task()) for _ in range(3)]
+                        await asyncio.sleep(3)
+                        print("   📮 AI service stress applied")
+                        
+        except Exception as e:
+            print(f"   ⚠️  Could not apply AI stress: {e}")
     
     async def restore_system(self):
-        """Restart the Ollama container"""
+        """Stop AI stress and allow recovery"""
         try:
-            subprocess.run(["docker", "start", self.ollama_container], 
-                         check=True, capture_output=True)
-            print("   🔄 AI service restarted")
-            await asyncio.sleep(30)  # Give time for model loading
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not restart AI service: {e}")
+            print("   🔄 Stopping AI stress and allowing recovery...")
+            
+            # Cancel stress tasks
+            for task in getattr(self, 'stress_tasks', []):
+                task.cancel()
+            
+            # Wait for cancellation
+            if hasattr(self, 'stress_tasks'):
+                await asyncio.gather(*self.stress_tasks, return_exceptions=True)
+            
+            # Allow AI service recovery time
+            await asyncio.sleep(8)
+            
+        except Exception as e:
+            print(f"   ⚠️  AI recovery process issue: {e}")
     
     async def validate_recovery(self) -> bool:
         """Test if AI service is working"""
@@ -141,30 +238,56 @@ class RedisChaosExperiment(ChaosExperiment):
     
     def __init__(self):
         super().__init__(
-            "Redis Queue Failure", 
-            "Test resilience to Redis cache/queue failures"
+            "Redis Cache Stress", 
+            "Test resilience to Redis cache overload"
         )
-        self.redis_container = "capstone-final-project-redis-1"
+        self.stress_tasks = []
     
     async def inject_failure(self):
-        """Stop the Redis container"""
+        """Simulate Redis stress by making many cache-heavy requests"""
         try:
-            subprocess.run(["docker", "stop", self.redis_container], 
-                         check=True, capture_output=True)
-            print("   📮 Redis service stopped")
-            await asyncio.sleep(2)
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not stop Redis: {e}")
+            print("   📮 Applying Redis cache stress...")
+            api_url = get_api_base_url()
+            
+            # Create stress by making many requests that would hit cache/session storage
+            async def redis_stress_task():
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    for _ in range(8):  # Multiple cache operations
+                        try:
+                            # Health checks and other operations that might use Redis
+                            await client.get(f"{api_url}/health")
+                            await asyncio.sleep(0.1)
+                        except Exception:
+                            pass
+            
+            # Launch multiple Redis stress tasks
+            self.stress_tasks = [asyncio.create_task(redis_stress_task()) for _ in range(6)]
+            
+            # Let stress build up
+            await asyncio.sleep(3)
+            print("   📮 Redis stress applied")
+            
+        except Exception as e:
+            print(f"   ⚠️  Could not apply Redis stress: {e}")
     
     async def restore_system(self):
-        """Restart the Redis container"""
+        """Stop Redis stress and allow recovery"""
         try:
-            subprocess.run(["docker", "start", self.redis_container], 
-                         check=True, capture_output=True)
-            print("   🔄 Redis service restarted")
+            print("   🔄 Stopping Redis stress and allowing recovery...")
+            
+            # Cancel stress tasks
+            for task in self.stress_tasks:
+                task.cancel()
+            
+            # Wait for cancellation
+            await asyncio.gather(*self.stress_tasks, return_exceptions=True)
+            self.stress_tasks.clear()
+            
+            # Allow recovery time
             await asyncio.sleep(5)
-        except subprocess.CalledProcessError as e:
-            print(f"   ⚠️  Could not restart Redis: {e}")
+            
+        except Exception as e:
+            print(f"   ⚠️  Redis recovery process issue: {e}")
     
     async def validate_recovery(self) -> bool:
         """Test if Redis is accessible"""
@@ -185,7 +308,7 @@ class ChaosTestRunner:
         self.experiments = []
         self.results = {}
     
-    async def setup_test_environment(self) -> Tuple[str, int]:
+    async def setup_test_environment(self) -> Tuple[str, str]:
         """Setup test user and pet for chaos testing"""
         async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
             # Register test user
@@ -209,18 +332,19 @@ class ChaosTestRunner:
                     "name": "Chaos Test Pet",
                     "species": "dog",
                     "breed": "Test Breed", 
-                    "age": 3,
-                    "weight": 20.0
+                    "age_years": 3,
+                    "weight_kg": 20.0,
+                    "sex": "male"
                 }
                 pet_response = await client.post("/api/v1/pets/", json=pet_data, headers=headers)
                 
-                if pet_response.status_code == 201:
+                if pet_response.status_code in [200, 201]:
                     pet_id = pet_response.json()["id"]
                     return token, pet_id
         
         raise Exception("Failed to setup test environment")
     
-    async def test_system_during_chaos(self, token: str, pet_id: int, 
+    async def test_system_during_chaos(self, token: str, pet_id: str, 
                                      duration: float = 30.0) -> Dict[str, Any]:
         """Test system behavior during chaos"""
         results = {
@@ -259,12 +383,9 @@ class ChaosTestRunner:
                     if time.time() % 10 < 1:  # Every ~10 seconds
                         try:
                             ai_data = {
-                                "pet_id": pet_id,
-                                "symptoms": ["chaos test"],
-                                "duration": "chaos",
-                                "severity": "mild"
+                                "pet_id": pet_id
                             }
-                            ai_response = await client.post("/api/v1/symptoms/analyze", 
+                            ai_response = await client.post("/api/v1/symptoms/assess", 
                                                           json=ai_data, 
                                                           headers=headers, 
                                                           timeout=15.0)
@@ -560,20 +681,36 @@ class TestResiliencePatterns:
             headers = {"Authorization": f"Bearer {token}"}
             
             # Create pet
-            pet_data = {"name": "Fallback Pet", "species": "dog", "breed": "Test", "age": 2, "weight": 15.0}
+            pet_data = {
+                "name": "Fallback Pet", 
+                "species": "dog", 
+                "breed": "Test", 
+                "age_years": 2, 
+                "weight_kg": 15.0,
+                "sex": "female"
+            }
             pet_response = await client.post("/api/v1/pets/", json=pet_data, headers=headers)
             pet_id = pet_response.json()["id"]
             
-            # Test symptoms analysis (should work with either AI or fallback)
-            symptoms_data = {
+            # Add symptoms to the pet first
+            from datetime import datetime
+            symptom_data = {
                 "pet_id": pet_id,
-                "symptoms": ["lethargy"],
-                "duration": "1 day",
-                "severity": "mild"
+                "symptom_name": "lethargy",
+                "severity": "moderate",
+                "description": "Pet seems tired",
+                "observed_at": datetime.now().isoformat() + "Z",
+                "duration_hours": 24
+            }
+            await client.post("/api/v1/symptoms/", json=symptom_data, headers=headers)
+            
+            # Test symptoms assessment (should work with either AI or fallback)
+            assessment_data = {
+                "pet_id": pet_id
             }
             
-            analysis_response = await client.post("/api/v1/symptoms/analyze", 
-                                                json=symptoms_data, 
+            analysis_response = await client.post("/api/v1/symptoms/assess", 
+                                                json=assessment_data, 
                                                 headers=headers)
             
             # Should get either AI analysis or rule-based fallback

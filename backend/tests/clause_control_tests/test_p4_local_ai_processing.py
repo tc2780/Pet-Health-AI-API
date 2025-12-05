@@ -43,19 +43,24 @@ async def test_ai_service_network_isolation(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
-    # Test normal AI processing first (should work with local Ollama)
-    response = await client.post(
-        "/api/v1/symptoms/assess",
+    # First record symptoms for the pet
+    await client.post(
+        "/api/v1/symptoms/",
         json={
             "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id), 
-                "symptom_name": "lethargy", 
-                "severity": "moderate", 
-                "observed_at": datetime.now().isoformat(), 
-                "duration_hours": 24
-            }]
+            "symptom_name": "lethargy",
+            "severity": "moderate",
+            "observed_at": datetime.now().isoformat(),
+            "duration_hours": 24,
+            "description": "Pet has been very tired lately"
         },
+        headers=auth_headers
+    )
+    
+    # Test normal AI processing (should work with local Ollama)
+    response = await client.post(
+        "/api/v1/symptoms/assess",
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -80,19 +85,24 @@ async def test_ai_service_network_isolation(client: AsyncClient):
         
         mock_external_post.side_effect = conditional_block
         
+        # Record another symptom for second test
+        await client.post(
+            "/api/v1/symptoms/",
+            json={
+                "pet_id": str(pet_id),
+                "symptom_name": "coughing",
+                "severity": "mild",
+                "observed_at": datetime.now().isoformat(),
+                "duration_hours": 12,
+                "description": "Occasional coughing"
+            },
+            headers=auth_headers
+        )
+        
         # This should still work (using local Ollama)
         response2 = await client.post(
             "/api/v1/symptoms/assess",
-            json={
-                "pet_id": str(pet_id),
-                "symptoms": [{
-                    "pet_id": str(pet_id), 
-                    "symptom_name": "coughing", 
-                    "severity": "mild", 
-                    "observed_at": datetime.now().isoformat(), 
-                    "duration_hours": 12
-                }]
-            },
+            json={"pet_id": str(pet_id)},
             headers=auth_headers
         )
         
@@ -112,18 +122,22 @@ async def test_local_llm_processing(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "vomiting", 
+        "severity": "moderate",
+        "description": "Pet vomited multiple times",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 24
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id), 
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "vomiting", 
-                "severity": "moderate",
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 24
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -159,19 +173,22 @@ async def test_no_external_ai_api_calls(client: AsyncClient):
         'api.huggingface.co'
     ]
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "coughing",
+        "severity": "mild",
+        "description": "Pet has been coughing",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 12
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
     # Test actual AI processing (should use local Ollama)
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "coughing",
-                "severity": "mild", 
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 12
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -238,19 +255,22 @@ async def test_data_stays_within_infrastructure(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "excessive_drinking",
+        "severity": "moderate",
+        "description": "Pet is drinking water excessively",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 48
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
     # Test actual AI processing with real data
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "excessive_drinking",
-                "severity": "moderate",
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 48
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     

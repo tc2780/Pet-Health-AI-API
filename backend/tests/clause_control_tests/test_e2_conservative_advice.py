@@ -43,26 +43,35 @@ async def test_conservative_urgency_assessment(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create ambiguous symptoms first
     ambiguous_symptoms = [
         {
             "pet_id": str(pet_id),
             "symptom_name": "mild lethargy", 
             "severity": "mild",
-            "observed_at": datetime.now().isoformat(),
+            "description": "Pet seems a bit tired",
+            "observed_at": datetime.now().isoformat() + "Z",
             "duration_hours": 12
         },
         {
             "pet_id": str(pet_id),
             "symptom_name": "decreased appetite", 
             "severity": "mild",
-            "observed_at": datetime.now().isoformat(),
+            "description": "Pet eating less than usual",
+            "observed_at": datetime.now().isoformat() + "Z",
             "duration_hours": 6
         }
     ]
     
+    # Create each symptom via API
+    for symptom in ambiguous_symptoms:
+        symptom_response = await client.post("/api/v1/symptoms/", json=symptom, headers=auth_headers)
+        assert symptom_response.status_code in [200, 201], f"Failed to create symptom: {symptom['symptom_name']}"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(pet_id), "symptoms": ambiguous_symptoms},
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -93,18 +102,22 @@ async def test_no_definitive_diagnoses(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id), 
+        "symptom_name": "vomiting", 
+        "severity": "moderate",
+        "description": "Pet vomited several times", 
+        "observed_at": datetime.now().isoformat() + "Z", 
+        "duration_hours": 24
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id), 
-            "symptoms": [{
-                "pet_id": str(pet_id), 
-                "symptom_name": "vomiting", 
-                "severity": "moderate", 
-                "observed_at": datetime.now().isoformat(), 
-                "duration_hours": 24
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -154,8 +167,7 @@ async def test_vet_consultation_always_recommended(client: AsyncClient):
     for symptoms in symptom_cases:
         response = await client.post(
             "/api/v1/symptoms/assess",
-            json={"pet_id": str(pet_id), "symptoms": symptoms},
-            headers=auth_headers
+            json={"pet_id": str(pet_id)}, headers=auth_headers
         )
         
         if response.status_code == 200:
@@ -194,8 +206,7 @@ async def test_escalation_for_multiple_symptoms(client: AsyncClient):
     
     single_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(pet_id), "symptoms": single_symptom},
-        headers=auth_headers
+        json={"pet_id": str(pet_id)}, headers=auth_headers
     )
     
     # Test multiple symptoms
@@ -225,8 +236,7 @@ async def test_escalation_for_multiple_symptoms(client: AsyncClient):
     
     multiple_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(pet_id), "symptoms": multiple_symptoms},
-        headers=auth_headers
+        json={"pet_id": str(pet_id)}, headers=auth_headers
     )
     
     if single_response.status_code == 200 and multiple_response.status_code == 200:
@@ -260,18 +270,22 @@ async def test_conservative_recommendation_language(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "diarrhea",
+        "severity": "moderate",
+        "description": "Pet has loose stool",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 24
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "diarrhea",
-                "severity": "moderate",
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 24
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     

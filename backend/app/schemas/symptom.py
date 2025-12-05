@@ -50,7 +50,6 @@ class SymptomAssessmentBase(BaseModel):
 
 class SymptomAssessmentCreate(BaseModel):
     pet_id: UUID
-    symptoms: list[SymptomCreate]
 
 
 class SymptomAssessment(SymptomAssessmentBase):

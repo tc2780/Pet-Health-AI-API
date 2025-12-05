@@ -132,7 +132,7 @@ docker compose down
 - **Record Symptoms**: `POST /api/v1/symptoms/`
 - **Get Pet Symptoms**: `GET /api/v1/symptoms/pet/{pet_id}`
 - **Get User's Pet Symptoms**: `GET /api/v1/symptoms/my-pets`
-- **AI Symptom Assessment**: `POST /api/v1/symptoms/assess` (with Ollama LLM)
+- **AI Symptom Assessment**: `POST /api/v1/symptoms/assess` (analyzes all existing symptoms for a pet)
 - **Get Assessments**: `GET /api/v1/symptoms/assessments/pet/{pet_id}`
 - **Get All User Assessments**: `GET /api/v1/symptoms/assessments/my-pets`
 

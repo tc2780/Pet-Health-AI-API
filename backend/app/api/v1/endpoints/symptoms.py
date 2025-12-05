@@ -202,7 +202,7 @@ async def create_symptom_assessment(
     db: AsyncSession = Depends(get_db_session)
 ):
     """
-    Create a new symptom assessment with AI analysis
+    Create a new symptom assessment with AI analysis based on existing symptoms for the pet
     """
     # Verify pet ownership
     pet_service = PetService(db)
@@ -221,7 +221,13 @@ async def create_symptom_assessment(
         )
     
     symptom_service = SymptomService(db)
-    return await symptom_service.create_assessment(assessment_data)
+    try:
+        return await symptom_service.create_assessment(assessment_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 
 @router.get("/assessments/pet/{pet_id}", response_model=List[SymptomAssessment])

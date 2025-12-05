@@ -202,28 +202,12 @@ curl -X GET "http://localhost:8000/api/v1/symptoms/pet/PET_ID_HERE" \
 
 ### 4. **AI-Powered Symptom Assessment**
 ```bash
-# Create comprehensive AI assessment
+# Create comprehensive AI assessment (analyzes all existing symptoms for pet)
 curl -X POST "http://localhost:8000/api/v1/symptoms/assess" \
      -H "Authorization: Bearer YOUR_TOKEN_HERE" \
      -H "Content-Type: application/json" \
      -d '{
-       "pet_id": "PET_ID_HERE",
-       "symptoms": [
-         {
-           "pet_id": "PET_ID_HERE",
-           "symptom_name": "lethargy",
-           "severity": "moderate", 
-           "observed_at": "2025-11-30T08:00:00Z",
-           "duration_hours": 12
-         },
-         {
-           "pet_id": "PET_ID_HERE", 
-           "symptom_name": "loss of appetite",
-           "severity": "severe",
-           "observed_at": "2025-11-30T07:00:00Z", 
-           "duration_hours": 24
-         }
-       ]
+       "pet_id": "PET_ID_HERE"
      }'
 
 # Get AI assessment results

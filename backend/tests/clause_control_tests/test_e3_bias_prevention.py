@@ -70,8 +70,7 @@ async def test_consistent_advice_across_breeds(client: AsyncClient):
         
         response = await client.post(
             "/api/v1/symptoms/assess",
-            json={"pet_id": str(pet_id), "symptoms": test_symptoms},
-            headers=auth_headers
+            json={"pet_id": str(pet_id)}, headers=auth_headers
         )
         
         if response.status_code == 200:
@@ -95,34 +94,44 @@ async def test_species_appropriate_advice(client: AsyncClient):
     """
     auth_headers = await get_auth_headers(client)
     
-    hairball_symptom = [{
-        "pet_id": "placeholder",  # Will be replaced below
-        "symptom_name": "hairball", 
-        "severity": "mild",
-        "observed_at": datetime.now().isoformat(),
-        "duration_hours": 6
-    }]
-    
     # Test cat (species-appropriate for hairballs)
     cat_id = await create_test_pet_with_data(client, {"name": "Whiskers", "species": "cat"}, auth_headers)
-    cat_symptom = hairball_symptom.copy()
-    cat_symptom[0]["pet_id"] = str(cat_id)
+    
+    # Create hairball symptom for cat
+    cat_symptom_data = {
+        "pet_id": str(cat_id),
+        "symptom_name": "hairball", 
+        "severity": "mild",
+        "description": "Cat is coughing up hairballs",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 6
+    }
+    cat_symptom_response = await client.post("/api/v1/symptoms/", json=cat_symptom_data, headers=auth_headers)
+    assert cat_symptom_response.status_code in [200, 201], "Failed to create cat symptom"
     
     cat_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(cat_id), "symptoms": cat_symptom},
-        headers=auth_headers
+        json={"pet_id": str(cat_id)}, headers=auth_headers
     )
     
     # Test dog (unusual for hairballs, but should still get quality advice)
     dog_id = await create_test_pet_with_data(client, {"name": "Buddy", "species": "dog"}, auth_headers)
-    dog_symptom = hairball_symptom.copy()
-    dog_symptom[0]["pet_id"] = str(dog_id)
     
+    # Create similar symptom for dog
+    dog_symptom_data = {
+        "pet_id": str(dog_id),
+        "symptom_name": "hairball", 
+        "severity": "mild",
+        "description": "Dog is showing hairball-like symptoms",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 6
+    }
+    dog_symptom_response = await client.post("/api/v1/symptoms/", json=dog_symptom_data, headers=auth_headers)
+    assert dog_symptom_response.status_code in [200, 201], "Failed to create dog symptom"
+
     dog_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(dog_id), "symptoms": dog_symptom},
-        headers=auth_headers
+        json={"pet_id": str(dog_id)}, headers=auth_headers
     )
     
     # Both should return valid responses
@@ -174,18 +183,21 @@ async def test_equal_access_across_pet_types(client: AsyncClient):
             auth_headers
         )
         
-        common_symptom = [{
+        # Create symptom for this pet
+        symptom_data = {
             "pet_id": str(pet_id),
             "symptom_name": "not_eating", 
             "severity": "moderate",
-            "observed_at": datetime.now().isoformat(),
+            "description": f"{species.title()} is not eating well",
+            "observed_at": datetime.now().isoformat() + "Z",
             "duration_hours": 8
-        }]
+        }
+        symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+        assert symptom_response.status_code in [200, 201], f"Failed to create symptom for {species}"
         
         response = await client.post(
             "/api/v1/symptoms/assess",
-            json={"pet_id": str(pet_id), "symptoms": common_symptom},
-            headers=auth_headers
+            json={"pet_id": str(pet_id)}, headers=auth_headers
         )
         
         assert response.status_code == 200, \
@@ -245,30 +257,40 @@ async def test_no_breed_size_discrimination(client: AsyncClient):
         "weight_kg": 50.0
     }, auth_headers)
     
-    identical_symptom = [{
-        "pet_id": "placeholder",
+    # Create symptom for small breed
+    small_symptom_data = {
+        "pet_id": str(small_breed_id),
         "symptom_name": "limping",
         "severity": "moderate",
-        "observed_at": datetime.now().isoformat(),
+        "description": "Dog is limping on one leg",
+        "observed_at": datetime.now().isoformat() + "Z",
         "duration_hours": 24
-    }]
+    }
+    small_symptom_response = await client.post("/api/v1/symptoms/", json=small_symptom_data, headers=auth_headers)
+    assert small_symptom_response.status_code in [200, 201], "Failed to create symptom for small breed"
     
     # Test small breed
-    small_symptom = identical_symptom.copy()
-    small_symptom[0]["pet_id"] = str(small_breed_id)
     small_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(small_breed_id), "symptoms": small_symptom},
-        headers=auth_headers
+        json={"pet_id": str(small_breed_id)}, headers=auth_headers
     )
     
+    # Create symptom for large breed
+    large_symptom_data = {
+        "pet_id": str(large_breed_id),
+        "symptom_name": "limping",
+        "severity": "moderate",
+        "description": "Dog is limping on one leg",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 24
+    }
+    large_symptom_response = await client.post("/api/v1/symptoms/", json=large_symptom_data, headers=auth_headers)
+    assert large_symptom_response.status_code in [200, 201], "Failed to create symptom for large breed"
+    
     # Test large breed
-    large_symptom = identical_symptom.copy()
-    large_symptom[0]["pet_id"] = str(large_breed_id)
     large_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(large_breed_id), "symptoms": large_symptom},
-        headers=auth_headers
+        json={"pet_id": str(large_breed_id)}, headers=auth_headers
     )
     
     assert small_response.status_code == 200
@@ -319,30 +341,40 @@ async def test_consistent_quality_regardless_of_breed_popularity(client: AsyncCl
         "breed": "azawakh"  # Rare breed
     }, auth_headers)
     
-    test_symptom = [{
-        "pet_id": "placeholder",
+    # Create symptom for common breed
+    common_symptom_data = {
+        "pet_id": str(common_breed_id),
         "symptom_name": "excessive_panting",
-        "severity": "moderate", 
-        "observed_at": datetime.now().isoformat(),
+        "severity": "moderate",
+        "description": "Dog is panting more than usual", 
+        "observed_at": datetime.now().isoformat() + "Z",
         "duration_hours": 12
-    }]
+    }
+    common_symptom_response = await client.post("/api/v1/symptoms/", json=common_symptom_data, headers=auth_headers)
+    assert common_symptom_response.status_code in [200, 201], "Failed to create symptom for common breed"
     
     # Test common breed
-    common_symptom = test_symptom.copy()
-    common_symptom[0]["pet_id"] = str(common_breed_id)
     common_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(common_breed_id), "symptoms": common_symptom},
-        headers=auth_headers
+        json={"pet_id": str(common_breed_id)}, headers=auth_headers
     )
     
+    # Create symptom for uncommon breed
+    uncommon_symptom_data = {
+        "pet_id": str(uncommon_breed_id),
+        "symptom_name": "excessive_panting",
+        "severity": "moderate",
+        "description": "Dog is panting more than usual", 
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 12
+    }
+    uncommon_symptom_response = await client.post("/api/v1/symptoms/", json=uncommon_symptom_data, headers=auth_headers)
+    assert uncommon_symptom_response.status_code in [200, 201], "Failed to create symptom for uncommon breed"
+    
     # Test uncommon breed
-    uncommon_symptom = test_symptom.copy()
-    uncommon_symptom[0]["pet_id"] = str(uncommon_breed_id)
     uncommon_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(uncommon_breed_id), "symptoms": uncommon_symptom},
-        headers=auth_headers
+        json={"pet_id": str(uncommon_breed_id)}, headers=auth_headers
     )
     
     assert common_response.status_code == 200

@@ -98,6 +98,9 @@ async def create_test_symptom(client: AsyncClient, pet_id, auth_headers=None):
 
 def format_symptoms_for_assessment(symptom_list, pet_id):
     """Format symptoms with required fields for assessment endpoint"""
+    # NOTE: This function is now deprecated as the assess endpoint 
+    # only requires pet_id and reads existing symptoms from database.
+    # Keeping for backward compatibility with old tests.
     from datetime import datetime
     formatted = []
     for symptom in symptom_list:
@@ -110,3 +113,8 @@ def format_symptoms_for_assessment(symptom_list, pet_id):
         }
         formatted.append(formatted_symptom)
     return formatted
+
+
+def create_assessment_request(pet_id):
+    """Create simplified assessment request body (new format)"""
+    return {"pet_id": str(pet_id)}

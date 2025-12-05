@@ -81,29 +81,37 @@ class SymptomService:
     
     # Assessment operations
     async def create_assessment(self, assessment_data: SymptomAssessmentCreate) -> SymptomAssessmentSchema:
-        """Create a new symptom assessment with AI analysis"""
+        """Create a new symptom assessment with AI analysis based on existing symptoms"""
         start_time = time.time()
         
-        # Prepare symptoms data for AI analysis with proper JSON serialization
+        # Get existing symptoms for the pet
+        existing_symptoms = await self.get_symptoms_by_pet(assessment_data.pet_id)
+        
+        if not existing_symptoms:
+            raise ValueError("No symptoms found for this pet. Please record symptoms before requesting an assessment.")
+        
+        # Convert existing symptoms to the format expected by AI analysis
         symptoms_list = []
-        for symptom in assessment_data.symptoms:
-            symptom_dict = symptom.model_dump()
-            # Convert datetime to ISO format string for JSON serialization
-            if 'observed_at' in symptom_dict and symptom_dict['observed_at']:
-                symptom_dict['observed_at'] = symptom_dict['observed_at'].isoformat()
-            # Convert UUID to string for JSON serialization
-            if 'pet_id' in symptom_dict and symptom_dict['pet_id']:
-                symptom_dict['pet_id'] = str(symptom_dict['pet_id'])
+        for symptom in existing_symptoms:
+            symptom_dict = {
+                'symptom_name': symptom.symptom_name,
+                'severity': symptom.severity,
+                'description': symptom.description,
+                'observed_at': symptom.observed_at.isoformat(),
+                'duration_hours': symptom.duration_hours,
+                'pet_id': str(symptom.pet_id)
+            }
             symptoms_list.append(symptom_dict)
         
         # Wrap symptoms in a dictionary as expected by schema
         symptoms_json = {
             "symptoms": symptoms_list,
             "assessment_timestamp": datetime.now().isoformat(),
-            "pet_id": str(assessment_data.pet_id)
+            "pet_id": str(assessment_data.pet_id),
+            "total_symptoms_analyzed": len(symptoms_list)
         }
         
-        # Mock AI analysis (replace with actual AI service call)
+        # AI analysis using existing symptoms
         ai_analysis_result = await self._analyze_symptoms_with_ai(
             assessment_data.pet_id, 
             symptoms_list
@@ -142,10 +150,6 @@ class SymptomService:
             'medical_disclaimer': ai_analysis_result.get("medical_disclaimer", 
                 "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment.")
         }
-
-        # Also create individual symptom records
-        for symptom_data in assessment_data.symptoms:
-            await self.create_symptom(symptom_data)
 
         # Convert to Pydantic schema for response using dict
         return SymptomAssessmentSchema(**assessment_dict)

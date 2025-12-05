@@ -223,12 +223,28 @@ class LoadTestClient:
             print(f"Create pet exception: {e}")
             return time.time() - start_time, False, {}
     
-    def analyze_symptoms(self, symptoms_data: Dict) -> Tuple[float, bool]:
-        """Test AI symptom analysis endpoint"""
+    def create_symptom(self, symptom_data: Dict) -> Tuple[float, bool]:
+        """Create a symptom for a pet"""
         start_time = time.time()
         try:
-            response = self.session.post("/api/v1/symptoms/analyze", 
-                                       json=symptoms_data, 
+            response = self.session.post("/api/v1/symptoms/", 
+                                       json=symptom_data, 
+                                       headers=self.auth_headers)
+            response_time = time.time() - start_time
+            return response_time, response.status_code in [200, 201]
+        except Exception:
+            return time.time() - start_time, False
+    
+    def analyze_symptoms(self, symptoms_data: Dict) -> Tuple[float, bool]:
+        """Test AI symptom assessment endpoint"""
+        start_time = time.time()
+        try:
+            # Use the simplified assessment format
+            assessment_data = {
+                "pet_id": symptoms_data.get("pet_id")
+            }
+            response = self.session.post("/api/v1/symptoms/assess", 
+                                       json=assessment_data, 
                                        headers=self.auth_headers,
                                        timeout=45.0)  # Longer timeout for AI
             response_time = time.time() - start_time
@@ -279,14 +295,11 @@ async def simulate_user_workflow(client: LoadTestClient, user_id: int, metrics: 
     
     await asyncio.sleep(2.0)
     
-    # 5. AI analysis (occasionally)
+    # 5. AI assessment (occasionally)
     if pets and len(pets) > 0 and user_id % 3 == 0:  # Every 3rd user
         pet = pets[0]
         symptoms_data = {
-            "pet_id": pet["id"],
-            "symptoms": ["lethargy", "loss of appetite"],
-            "duration": "2 days",
-            "severity": "mild"
+            "pet_id": pet["id"]
         }
         response_time, success = client.analyze_symptoms(symptoms_data)
         metrics.add_result(response_time, success)
@@ -508,32 +521,30 @@ class TestAIPerformance:
         _, success, pet = load_test_client.create_pet(pet_data)
         assert success, "Failed to create test pet"
         
+        # Add symptoms to the pet before testing assessment
+        from datetime import datetime
+        symptom_data = {
+            "pet_id": pet["id"],
+            "symptom_name": "lethargy",
+            "severity": "moderate",
+            "description": "Performance test symptom",
+            "observed_at": datetime.now().isoformat() + "Z",
+            "duration_hours": 24
+        }
+        symptom_response_time, symptom_success = load_test_client.create_symptom(symptom_data)
+        assert symptom_success, "Failed to create test symptom"
+        
         metrics = PerformanceMetrics()
         
-        # Test AI analysis with various symptoms
+        # Test AI assessment with the same pet
         test_cases = [
-            {
-                "pet_id": pet["id"],
-                "symptoms": ["lethargy"],
-                "duration": "1 day",
-                "severity": "mild"
-            },
-            {
-                "pet_id": pet["id"], 
-                "symptoms": ["vomiting", "diarrhea"],
-                "duration": "2 days",
-                "severity": "moderate"
-            },
-            {
-                "pet_id": pet["id"],
-                "symptoms": ["difficulty breathing"],
-                "duration": "6 hours", 
-                "severity": "severe"
-            }
+            {"pet_id": pet["id"]},  # Simplified - just need pet_id
+            {"pet_id": pet["id"]},  # Test multiple assessments of same pet
+            {"pet_id": pet["id"]}
         ]
         
-        for symptoms_data in test_cases:
-            response_time, success = load_test_client.analyze_symptoms(symptoms_data)
+        for assessment_data in test_cases:
+            response_time, success = load_test_client.analyze_symptoms(assessment_data)
             metrics.add_result(response_time, success)
             
             # Wait between AI requests to avoid overloading
@@ -576,16 +587,29 @@ class TestAIPerformance:
                     results.append({"worker_id": worker_id, "success": False, "error": "Pet creation failed"})
                     return
                 
-                # Submit AI analysis
-                symptoms_data = {
+                # Add symptoms to the pet before assessment
+                from datetime import datetime
+                symptom_data = {
                     "pet_id": pet["id"],
-                    "symptoms": ["excessive grooming"],
-                    "duration": "3 days",
-                    "severity": "mild"
+                    "symptom_name": "stress test",
+                    "severity": "mild",
+                    "description": "Concurrent test symptom",
+                    "observed_at": datetime.now().isoformat() + "Z",
+                    "duration_hours": 1
+                }
+                symptom_time, symptom_success = client.create_symptom(symptom_data)
+                
+                if not symptom_success:
+                    results.append({"worker_id": worker_id, "success": False, "error": "Symptom creation failed"})
+                    return
+                
+                # Submit AI assessment
+                assessment_data = {
+                    "pet_id": pet["id"]
                 }
                 
                 start_time = time.time()
-                response_time, success = client.analyze_symptoms(symptoms_data)
+                response_time, success = client.analyze_symptoms(assessment_data)
                 
                 results.append({
                     "worker_id": worker_id,

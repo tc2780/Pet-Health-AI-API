@@ -269,17 +269,14 @@ class TestSymptomAnalysis:
         
         headers = {"Authorization": f"Bearer {token}"}
         
-        # Submit symptom analysis request
-        analysis_data = {
-            "pet_id": pet_id,
-            "symptoms": ["lethargy", "loss of appetite", "vomiting"],
-            "duration": "2 days", 
-            "severity": "moderate"
+        # Submit symptom assessment request
+        assessment_data = {
+            "pet_id": pet_id
         }
         
-        response = await client.post("/api/v1/symptoms/analyze", json=analysis_data, headers=headers)
+        response = await client.post("/api/v1/symptoms/assess", json=assessment_data, headers=headers)
         
-        # Should return analysis result
+        # Should return assessment result
         assert response.status_code in [200, 202]  # 202 for async processing
         
         if response.status_code == 200:
@@ -296,15 +293,12 @@ class TestAIPerformance:
         """Test AI service response time"""
         start_time = time.time()
         
-        # Make AI analysis request
-        analysis_data = {
-            "pet_id": 1,
-            "symptoms": ["coughing"],
-            "duration": "1 day",
-            "severity": "mild"
+        # Make AI assessment request
+        assessment_data = {
+            "pet_id": "pet-uuid-1234"
         }
         
-        response = await client.post("/api/v1/symptoms/analyze", json=analysis_data)
+        response = await client.post("/api/v1/symptoms/assess", json=assessment_data)
         response_time = time.time() - start_time
         
 ## Performance Testing Strategy (9 tests)
@@ -360,22 +354,19 @@ class TestConcurrentLoad:
 ```python
 class TestAIPerformance:
     @pytest.mark.asyncio
-    async def test_ai_analysis_performance(self):
+    async def test_ai_assessment_performance(self):
         """Test AI analysis response times"""
         start_time = time.time()
         
-        analysis_data = {
-            "pet_id": 1,
-            "symptoms": ["lethargy", "loss of appetite"],
-            "duration": "2 days",
-            "severity": "moderate"  
+        assessment_data = {
+            "pet_id": "pet-uuid-1234"
         }
         
-        response = await client.post("/api/v1/symptoms/analyze", json=analysis_data)
+        response = await client.post("/api/v1/symptoms/assess", json=assessment_data)
         response_time = time.time() - start_time
         
         assert response.status_code in [200, 202]
-        assert response_time < 45.0  # AI analysis within 45 seconds
+        assert response_time < 45.0  # AI assessment within 45 seconds
 ```
 
 ### Performance Benchmarks
@@ -384,13 +375,13 @@ class TestAIPerformance:
 - **Health Check**: <1 second response time
 - **User Authentication**: <5 seconds average
 - **Pet CRUD Operations**: <3 seconds average  
-- **AI Analysis**: <45 seconds (including model processing)
+- **AI Assessment**: <45 seconds (including model processing)
 - **Concurrent Users**: Support for 50+ concurrent requests
 
 #### Throughput Requirements
 - **Health Checks**: 100+ requests/second
 - **API Operations**: 50+ requests/second sustained
-- **AI Analysis**: 5-10 concurrent analysis requests
+- **AI Assessment**: 5-10 concurrent assessment requests
 
 ## Compliance and Security Testing (31 tests)
 
@@ -755,7 +746,7 @@ class PerformanceMonitor:
                 "health_check": await measure_response_time("/health"),
                 "user_auth": await measure_response_time("/api/v1/auth/login"), 
                 "pet_operations": await measure_response_time("/api/v1/pets/"),
-                "ai_analysis": await measure_response_time("/api/v1/symptoms/analyze")
+                "ai_assessment": await measure_response_time("/api/v1/symptoms/assess")
             },
             "throughput": {
                 "requests_per_second": SystemMetrics.get_rps(),

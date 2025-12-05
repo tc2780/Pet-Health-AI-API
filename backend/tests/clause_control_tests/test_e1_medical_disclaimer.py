@@ -43,18 +43,22 @@ async def test_ai_response_contains_disclaimer(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Add symptoms to the pet first
+    symptom_data = {
+        "pet_id": str(pet_id), 
+        "symptom_name": "lethargy", 
+        "severity": "moderate", 
+        "description": "Pet seems tired",
+        "observed_at": datetime.now().isoformat() + "Z", 
+        "duration_hours": 24
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Now run assessment with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id), 
-            "symptoms": [{
-                "pet_id": str(pet_id), 
-                "symptom_name": "lethargy", 
-                "severity": "moderate", 
-                "observed_at": datetime.now().isoformat(), 
-                "duration_hours": 24
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -87,26 +91,35 @@ async def test_emergency_symptom_immediate_vet_referral(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create emergency symptoms first
     emergency_symptoms = [
         {
             "pet_id": str(pet_id),
             "symptom_name": "difficulty breathing", 
             "severity": "severe",
-            "observed_at": datetime.now().isoformat(),
+            "description": "Pet is having trouble breathing",
+            "observed_at": datetime.now().isoformat() + "Z",
             "duration_hours": 2
         },
         {
             "pet_id": str(pet_id),
             "symptom_name": "seizure", 
             "severity": "severe",
-            "observed_at": datetime.now().isoformat(),
+            "description": "Pet had a seizure",
+            "observed_at": datetime.now().isoformat() + "Z",
             "duration_hours": 1
         }
     ]
     
+    # Create each symptom via API
+    for symptom in emergency_symptoms:
+        symptom_response = await client.post("/api/v1/symptoms/", json=symptom, headers=auth_headers)
+        assert symptom_response.status_code in [200, 201], f"Failed to create symptom: {symptom['symptom_name']}"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={"pet_id": str(pet_id), "symptoms": emergency_symptoms},
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -137,19 +150,22 @@ async def test_disclaimer_in_all_ai_endpoints(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
-    # Test symptom assessment endpoint
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "vomiting",
+        "severity": "mild",
+        "description": "Pet vomited once",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 12
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Test symptom assessment endpoint with simplified format
     assessment_response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "vomiting",
-                "severity": "mild",
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 12
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     
@@ -195,18 +211,22 @@ async def test_conservative_language_in_responses(client: AsyncClient):
     auth_headers = await get_auth_headers(client)
     pet_id = await create_test_pet(client, auth_headers)
     
+    # Create symptom first
+    symptom_data = {
+        "pet_id": str(pet_id),
+        "symptom_name": "loss_of_appetite",
+        "severity": "moderate",
+        "description": "Pet is not eating well",
+        "observed_at": datetime.now().isoformat() + "Z",
+        "duration_hours": 24
+    }
+    symptom_response = await client.post("/api/v1/symptoms/", json=symptom_data, headers=auth_headers)
+    assert symptom_response.status_code in [200, 201], "Failed to create symptom"
+    
+    # Now assess with simplified format
     response = await client.post(
         "/api/v1/symptoms/assess",
-        json={
-            "pet_id": str(pet_id),
-            "symptoms": [{
-                "pet_id": str(pet_id),
-                "symptom_name": "loss_of_appetite",
-                "severity": "moderate",
-                "observed_at": datetime.now().isoformat(),
-                "duration_hours": 24
-            }]
-        },
+        json={"pet_id": str(pet_id)},
         headers=auth_headers
     )
     

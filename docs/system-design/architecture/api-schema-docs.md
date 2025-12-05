@@ -426,25 +426,7 @@ Content-Type: application/json
 
 Request:
 {
-  "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-  "symptoms": [
-    {
-      "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-      "symptom_name": "lethargy",
-      "severity": "moderate",
-      "description": "Pet seems unusually tired",
-      "observed_at": "2025-12-04T14:30:00Z",
-      "duration_hours": 6
-    },
-    {
-      "pet_id": "456e7890-e89b-12d3-a456-426614174001",
-      "symptom_name": "loss of appetite",
-      "severity": "mild",
-      "description": "Eating less than usual",
-      "observed_at": "2025-12-04T14:00:00Z",
-      "duration_hours": 12
-    }
-  ]
+  "pet_id": "456e7890-e89b-12d3-a456-426614174001"
 }
 
 Response (200):
