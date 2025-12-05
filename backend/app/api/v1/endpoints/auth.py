@@ -9,20 +9,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db_session
 from app.core.security import create_access_token, verify_password, get_password_hash
-from app.schemas.user import User, UserCreate, Token
+from app.schemas.user import User, UserCreate, Token, UserWithToken
 from app.services.user import UserService
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_prefix}/auth/login")
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserWithToken)
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db_session)
 ):
     """
-    Register a new user
+    Register a new user and return user data with access token
     """
     user_service = UserService(db)
     
@@ -36,7 +36,19 @@ async def register(
     
     # Create new user
     user = await user_service.create_user(user_data)
-    return user
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    access_token = create_access_token(
+        data={"sub": user.id}, expires_delta=access_token_expires
+    )
+    
+    # Return user data with token
+    return UserWithToken(
+        **user.__dict__,
+        access_token=access_token,
+        token_type="bearer"
+    )
 
 
 @router.post("/login", response_model=Token)
