@@ -366,7 +366,7 @@ class TestAIPerformance:
         response_time = time.time() - start_time
         
         assert response.status_code in [200, 202]
-        assert response_time < 45.0  # AI assessment within 45 seconds
+        assert response_time < 30.0  # AI assessment within 30 seconds
 ```
 
 ### Performance Benchmarks
@@ -375,7 +375,7 @@ class TestAIPerformance:
 - **Health Check**: <1 second response time
 - **User Authentication**: <5 seconds average
 - **Pet CRUD Operations**: <3 seconds average  
-- **AI Assessment**: <45 seconds (including model processing)
+- **AI Assessment**: <30 seconds (including model processing)
 - **Concurrent Users**: Support for 50+ concurrent requests
 
 #### Throughput Requirements
@@ -1016,8 +1016,8 @@ API Response Time:
   Measurement: HTTP request duration (excluding AI endpoints)
 
 AI Analysis Performance:
-  Target: 90% of analyses < 30 seconds
-  Target: 99% of analyses < 45 seconds  
+  Target: 90% of analyses < 20 seconds
+  Target: 99% of analyses < 30 seconds  
   Measurement: End-to-end AI processing time
 
 Database Performance:

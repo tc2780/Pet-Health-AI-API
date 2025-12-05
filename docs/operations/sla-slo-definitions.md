@@ -127,7 +127,7 @@ AI Service Performance:
 
 #### Warning Alerts (P1)
 - API response time p95 > 1 second for 10 minutes
-- AI assessment time p95 > 45 seconds for 10 minutes
+- AI assessment time p95 > 30 seconds for 10 minutes
 - Error rate > 5% for any endpoint over 5 minutes
 - Disk space > 85% on any volume
 

@@ -344,8 +344,8 @@ Respond only with the JSON object, no other text."""
         }
         
         async with aiohttp.ClientSession() as session:
-            # Increase timeout to 60 seconds for AI model processing
-            timeout = aiohttp.ClientTimeout(total=120)
+            # Set timeout to 60 seconds for AI model processing
+            timeout = aiohttp.ClientTimeout(total=60)
             async with session.post(ollama_url, json=payload, timeout=timeout) as response:
                 if response.status == 200:
                     result = await response.json()

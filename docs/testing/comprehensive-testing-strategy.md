@@ -213,7 +213,7 @@ docker compose exec api pytest tests/ -v
 - **Health Endpoints**: < 5ms average response time
 - **Authentication**: < 50ms average response time
 - **Pet Operations**: < 100ms average response time
-- **AI Analysis**: < 45000ms average response time
+- **AI Analysis**: < 30000ms average response time
 
 ### Load Testing Standards
 - **Concurrent Users**: Support 50+ simultaneous users

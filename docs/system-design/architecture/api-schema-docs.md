@@ -453,7 +453,7 @@ Response (200):
   "confidence_score": 0.78,
   "ai_provider": "ollama",
   "ai_model": "llama3.2:3b", 
-  "processing_time_ms": 2450,
+  "processing_time_ms": 18500,
   "medical_disclaimer": "This AI assessment is for informational purposes only and should not replace professional veterinary advice.",
   "created_at": "2025-12-05T15:00:00Z"
 }
@@ -479,7 +479,7 @@ Response (200):
   "possible_causes": ["dietary indiscretion", "stress", "minor viral infection"],
   "ai_provider": "ollama",
   "ai_model": "llama3.2:3b",
-  "processing_time_ms": 2450,
+  "processing_time_ms": 18500,
   "created_at": "2025-12-05T15:00:00Z"
 }
 ```
@@ -577,7 +577,7 @@ Response (200):
 - **Primary Model**: Ollama llama3.2:3b (3GB model size)
 - **Local Processing**: All AI inference runs locally via Docker Compose  
 - **Privacy-First**: Pet health data never leaves your infrastructure
-- **Response Time**: Typically 2-4 seconds for complete assessment
+- **Response Time**: Typically 10-30 seconds for complete assessment
 - **Fallback Handling**: Graceful degradation when Ollama service unavailable
 
 ### Model Specifications  
