@@ -165,7 +165,9 @@ async def test_user_profile_modification(client: AsyncClient):
     assert response.status_code == 200
     
     # Update profile (if update endpoint exists)
-    update_data = {"email": "updated@example.com"}
+    import uuid
+    unique_update_email = f"updated_{uuid.uuid4().hex[:8]}@example.com"
+    update_data = {"email": unique_update_email}
     
     # Try to update profile
     response = await client.put("/api/v1/users/me", 

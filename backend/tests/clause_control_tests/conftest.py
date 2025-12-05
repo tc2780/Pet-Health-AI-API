@@ -4,12 +4,14 @@ Pytest Configuration for Clause Control Tests
 This file sets up test fixtures and configuration for the clause control test suite.
 It provides the AsyncClient fixture and other test dependencies needed across
 all clause control test modules.
+
+These tests run against the actual application database (not an isolated test database)
+to verify compliance controls in a real environment.
 """
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from fastapi.testclient import TestClient
 import asyncio
 import sys
 import os
@@ -32,22 +34,9 @@ def event_loop():
 async def client():
     """
     Create an async HTTP client for testing API endpoints
+    
+    NOTE: These clause control tests run against the actual application database
+    to verify compliance controls in the real environment.
     """
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
-
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """
-    Set up test environment variables and configuration
-    """
-    # Set environment variables for testing
-    os.environ["ENVIRONMENT"] = "test"
-    os.environ["DATABASE_URL"] = "sqlite:///./test.db"
-    os.environ["JWT_SECRET"] = "test-secret-key"
-    
-    yield
-    
-    # Cleanup after tests
-    pass

@@ -110,7 +110,7 @@ async def test_optional_fields_clearly_marked(client: AsyncClient):
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_no_unnecessary_user_data_collection(client: AsyncClient):
     """
     Test that user registration doesn't collect unnecessary personal data
@@ -119,9 +119,13 @@ async def test_no_unnecessary_user_data_collection(client: AsyncClient):
     CONTROL: User accounts require only authentication essentials  
     VERIFICATION: Registration works with minimal required fields
     """
+    import uuid
+    # Use unique email to avoid conflicts with other tests
+    unique_email = f"minimal_{uuid.uuid4().hex[:8]}@example.com"
+    
     # Test minimal user registration
     minimal_user = {
-        "email": "minimal@example.com",
+        "email": unique_email,
         "password": "SecurePass123!"
     }
     

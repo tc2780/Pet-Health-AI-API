@@ -61,6 +61,7 @@ class SymptomAssessment(SymptomAssessmentBase):
     ai_provider: Optional[str] = None
     processing_time_ms: Optional[int] = None
     created_at: datetime
+    medical_disclaimer: Optional[str] = None
 
 
 # AI Analysis Request/Response

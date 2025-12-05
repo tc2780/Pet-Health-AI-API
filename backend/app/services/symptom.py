@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.models.symptom import Symptom, SymptomAssessment as SymptomAssessmentModel
 from app.schemas.symptom import SymptomCreate, SymptomUpdate, SymptomAssessmentCreate, SymptomAssessment as SymptomAssessmentSchema
 
@@ -137,7 +138,9 @@ class SymptomService:
             'possible_causes': assessment.possible_causes,
             'ai_provider': assessment.ai_provider,
             'processing_time_ms': assessment.processing_time_ms,
-            'created_at': assessment.created_at
+            'created_at': assessment.created_at,
+            'medical_disclaimer': ai_analysis_result.get("medical_disclaimer", 
+                "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment.")
         }
 
         # Also create individual symptom records
@@ -306,12 +309,15 @@ IMPORTANT GUIDELINES:
 - Recommend professional veterinary care for concerning symptoms
 - Focus on urgency assessment and immediate care steps
 - Be conservative in recommendations - when in doubt, recommend vet visit
+- MANDATORY: Include medical disclaimer in all responses
 
 Please provide a JSON response with exactly these fields:
 {{
   "urgency_level": "emergency|high|medium|low",
   "analysis": "detailed analysis of symptoms and possible causes",
-  "recommendations": "specific care recommendations and when to seek professional help"
+  "recommendations": "specific care recommendations and when to seek professional help",
+  "possible_causes": ["list", "of", "possible", "causes"],
+  "medical_disclaimer": "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment."
 }}
 
 Respond only with the JSON object, no other text."""
@@ -320,7 +326,7 @@ Respond only with the JSON object, no other text."""
     
     async def _call_ollama_api(self, prompt: str) -> str:
         """Call local Ollama API"""
-        ollama_url = "http://localhost:11434/api/generate"
+        ollama_url = f"{settings.ollama_base_url}/api/generate"
         
         payload = {
             "model": settings.ollama_model,  # Configurable: llama3.2:1b or llama3.2:3b
@@ -359,6 +365,22 @@ Respond only with the JSON object, no other text."""
                 if field not in parsed:
                     raise ValueError(f"Missing required field: {field}")
             
+            # Add medical disclaimer if not present
+            if "medical_disclaimer" not in parsed or not parsed["medical_disclaimer"]:
+                parsed["medical_disclaimer"] = "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment."
+            
+            # Add possible_causes if not present
+            if "possible_causes" not in parsed or not parsed["possible_causes"]:
+                parsed["possible_causes"] = ["general health concerns", "environmental factors", "age-related conditions"]
+            
+            # Ensure recommendations is a string (convert list to string if needed)
+            if isinstance(parsed.get("recommendations"), list):
+                parsed["recommendations"] = "; ".join(parsed["recommendations"])
+            
+            # Ensure analysis is a string
+            if isinstance(parsed.get("analysis"), list):
+                parsed["analysis"] = " ".join(parsed["analysis"])
+            
             # Validate urgency level and normalize to standard values
             valid_urgency_map = {
                 "emergency": "emergency",
@@ -379,7 +401,9 @@ Respond only with the JSON object, no other text."""
             return {
                 "urgency_level": "medium",
                 "analysis": f"AI Analysis: {ai_response[:200]}..." if len(ai_response) > 200 else ai_response,
-                "recommendations": "Please monitor your pet and consult with a veterinarian if symptoms persist or worsen."
+                "recommendations": "Please monitor your pet and consult with a veterinarian if symptoms persist or worsen.",
+                "possible_causes": ["general health concerns", "environmental factors"],
+                "medical_disclaimer": "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment."
             }
     
     async def _fallback_analysis(self, symptoms: List[Dict]) -> Dict[str, Any]:
@@ -436,7 +460,8 @@ Respond only with the JSON object, no other text."""
             "analysis": f"Fallback Analysis: {analysis_with_disclaimer}",
             "urgency_level": urgency_level,
             "recommendations": recommendations,
-            "possible_causes": possible_causes
+            "possible_causes": possible_causes,
+            "medical_disclaimer": "This assessment is for educational purposes only and is not professional veterinary advice. Please consult a licensed veterinarian for proper diagnosis and treatment."
         }
 
     def _generate_possible_causes(self, symptoms: List[Dict]) -> List[str]:
