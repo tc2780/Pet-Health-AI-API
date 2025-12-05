@@ -57,7 +57,7 @@ A comprehensive pet health management system featuring local AI-powered symptom 
    - ❤️ **Health Check**: http://localhost:8000/health
    - 🌐 **API Base URL**: http://localhost:8000/api/v1/
 
-### 🎮 Interactive Demo
+### 🎮 Simple Interactive Demo
 
 Run comprehensive demo scripts to test all functionality:
 
