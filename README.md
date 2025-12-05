@@ -30,7 +30,8 @@
    ```
 
 4. **Access the API**:
-   - API Documentation: http://localhost:8000/docs
+   - API Documentation -- Swagger Doc: http://localhost:8000/docs
+        - (Note: Can try out endpoints here)
    - Health Check: http://localhost:8000/health
    - API Base: http://localhost:8000/api/v1/
 
